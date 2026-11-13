@@ -1,0 +1,52 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ITERATION 1 - PARTIE C : indicateurs et verification
+;; Responsable : (a remplir)
+;; Indicateurs de population et de stocks, invariants, courbes.
+;; A faire : regler taux-naissance (population stable sans zombie), scenarios de test, plafond de sorties (avec B).
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report nb-humains-vivants
+  report count humains
+end
+
+;; Survivants = humains vivants non transformes (sains + infectes) / nb-humains-initial
+;; Attention : avec la reproduction, le ratio peut depasser 1.
+to-report proportion-survivants
+  ifelse nb-humains-initial > 0
+    [ report count humains / nb-humains-initial ]
+    [ report 0 ]
+end
+
+to-report stock-total-colonies
+  report 0 ;; TODO : somme des stock-colonie
+end
+
+to-report stock-total-points
+  report 0 ;; TODO : somme des stock-point des patches "ravitaillement"
+end
+
+to-report nb-colonies-actives
+  report 0 ;; TODO : colonies avec au moins un humain vivant non transforme
+end
+
+;; Vrai si tous les invariants sont respectes. A tester a la main ou dans BehaviorSpace
+to-report invariants-ok?
+  ;; stocks jamais negatifs
+  let stocks-ok? (all? colonies [ stock-colonie >= 0 ]) and (all? patches [ stock-point >= 0 ])
+
+  ;; un seul etat par humain
+  let etats-ok? all? humains [ etat = "sain" or etat = "infecte" ]
+
+  ;; conservation des humains : initiaux + naissances = vivants + transformes + morts
+  let humains-ok? (nb-humains-initial + nb-naissances) =
+    (count humains + nb-transformations + nb-morts-infection + nb-morts-attaque + nb-morts-famine)
+
+  ;; conservation des zombies : initiaux + transformes = vivants + detruits + morts de vieillesse
+  let zombies-ok? (nb-zombies-initial + nb-transformations) =
+    (count zombies + nb-zombies-detruits + nb-zombies-vieux)
+
+  ;; sans zombie initial (et sans infecte initial), aucune infection n'apparait
+  let source-ok? (nb-zombies-initial > 0) or (nb-nouvelles-infections = 0)
+
+  report stocks-ok? and etats-ok? and humains-ok? and zombies-ok? and source-ok?
+end

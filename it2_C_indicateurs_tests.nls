@@ -1,0 +1,16 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ITERATION 2 - PARTIE C : indicateurs et tests humain / zombie
+;; Responsable : (a remplir)
+;; Infectes, part d'infectes, scenarios unitaires, courbes humains/zombies.
+;; Scenarios a ecrire : proba-infection = 0, proba-defense = 1, proba-defense = 0 et proba-infection = 1.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report nb-infectes
+  report count humains with [ etat = "infecte" ]
+end
+
+to-report part-infectes
+  ifelse any? humains
+    [ report nb-infectes / count humains ]
+    [ report 0 ]
+end

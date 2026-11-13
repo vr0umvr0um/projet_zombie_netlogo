@@ -1,0 +1,59 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ITERATION 1 - PARTIE B : humains et sorties de ravitaillement
+;; Responsable : (a remplir)
+;; Creation des humains, machine a etats des sorties, strategie individuelle fixe.
+;; Utilise mourir [cause] (partie A).
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to setup-humains
+  ;; TODO : creer nb-humains humains, repartis equitablement (100 / 4 = 25 par colonie),
+  ;;        places pres de leur colonie, etat "sain", mission "colonie",
+  ;;        groupe-id -1, nourriture-perso 0, chemin-aller vide.
+end
+
+to humain-agir
+  ;; Machine a etats simple selon la mission.
+  ;; (iteration 2) si etat = "infecte", appeler evoluer-infection en premier (peut tuer ou transformer).
+  ;; TODO : selon mission :
+  ;;   "colonie" -> decider-sortie
+  ;;   "aller"   -> aller-vers-point
+  ;;   "retour"  -> rentrer-a-la-colonie
+  ;; NE PAS appeler detecter-et-defendre ici : les attaques sont declenchees par les
+  ;; zombies (it2_A), qui appellent eux-memes cette procedure sur l'humain attaque.
+  ;; Si evoluer-infection tue l'humain (mort ou transformation), il n'agit plus ensuite.
+end
+
+to decider-sortie
+  ;; Strategie individuelle fixe : chaque humain agit seul.
+  ;; TODO : si stock-colonie < s-min, choisir un point de ravitaillement
+  ;;        (choisir-point) ; s'il n'y en a aucun, rester a la colonie.
+  ;; TODO : si strategie = "groupe fixe" ou "groupe adaptatif", deleguer a
+  ;;        decider-sortie-groupe (a ecrire dans une seconde etape).
+end
+
+to-report choisir-point
+  ;; Point de ravitaillement le plus proche avec stock strictement > 0.
+  ;; TODO : retourner ce patch, ou nobody s'il n'y en a pas.
+  report nobody
+end
+
+to aller-vers-point
+  ;; TODO : avancer d'un patch vers cible-point en evitant les obstacles.
+  ;; TODO : memoriser le patch dans chemin-aller (pour le retour).
+  ;; TODO : consommer 1 unite de nourriture-perso par tick de deplacement ;
+  ;;        a 0 en route -> mort de famine (mourir "famine").
+  ;; TODO : a l'arrivee, appeler collecter.
+  ;; ATTENTION : deux consommations a distinguer dans le rapport
+  ;;   (1 unite par tick de deplacement / consommation-jour dans la colonie).
+end
+
+to collecter
+  ;; TODO : prendre min(stock-point, capacite-transport) ; stock-point diminue.
+  ;; TODO : passer mission a "retour".
+end
+
+to rentrer-a-la-colonie
+  ;; TODO : rejouer chemin-aller a l'envers.
+  ;; TODO : a l'arrivee, deposer nourriture-perso dans stock-colonie, mission "colonie".
+  ;; Note : un humain infecte qui rentre peut contaminer la colonie (hypothese des groupes).
+end

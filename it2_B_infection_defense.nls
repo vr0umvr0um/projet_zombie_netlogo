@@ -1,0 +1,47 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ITERATION 2 - PARTIE B : defense, infection, transformation (cote humain)
+;; Responsable : (a remplir)
+;; Les attaques sont declenchees par les zombies (partie A) ; detecter-et-defendre est la reponse de l'humain.
+;; A faire : appeler evoluer-infection au debut de humain-agir (fichier it1_B).
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Contexte : un humain (appele par le zombie qui l'attaque, cf. zombie-poursuivre)
+to detecter-et-defendre
+  let attaquant min-one-of zombies in-radius distance-contact [ distance myself ]
+  if attaquant != nobody [
+    ifelse random-float 1 < proba-defense [
+      ask attaquant [ die ]
+      set nb-zombies-detruits nb-zombies-detruits + 1
+    ] [
+      if random-float 1 < proba-infection [ infecter ]
+    ]
+  ]
+end
+
+;; Contexte : un humain. Sans effet si l'humain est deja infecte
+to infecter
+  if etat = "sain" [
+    set etat "infecte"
+    set date-infection ticks
+    set nb-nouvelles-infections nb-nouvelles-infections + 1
+    set color orange
+  ]
+end
+
+;; Contexte : un humain infecte. Apres delai-transformation ticks, il meurt de
+;; l'infection (proba-mort-infection) ou devient zombie
+to evoluer-infection
+  if etat = "infecte" and (ticks - date-infection) >= delai-transformation [
+    ifelse random-float 1 < proba-mort-infection
+      [ mourir "infection" ]
+      [ transformer ]
+  ]
+end
+
+;; Contexte : un humain infecte. L'humain disparait, un zombie apparait au meme endroit
+;; (ce n'est pas une mort : elle est comptee dans nb-transformations)
+to transformer
+  hatch-zombies 1 [ initialiser-zombie ]
+  set nb-transformations nb-transformations + 1
+  die
+end

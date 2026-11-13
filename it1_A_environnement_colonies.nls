@@ -1,0 +1,43 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ITERATION 1 - PARTIE A : environnement et colonies
+;; Responsable : (a remplir)
+;; Carte, obstacles, points de ravitaillement, colonies, consommation, famine, reproduction, mort.
+;; Test : nb-zombies = 0. Fournit mourir [cause] aux autres parties.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to setup-environnement
+  ;; TODO : initialiser tous les patches (type "vide", stock 0).
+  ;; TODO : poser nb-obstacles patches "obstacle" (couleur sombre).
+  ;; TODO : poser nb-points-ravitaillement patches "ravitaillement" avec
+  ;;        stock-point = stock-initial-point (et stock-max-point = meme valeur).
+  ;;        Eviter de les poser sur un obstacle ou trop pres d'une colonie.
+  ;; TODO : colorer les patches selon le stock (comme l'herbe de Wolf Sheep Predation).
+end
+
+to setup-colonies
+  ;; TODO : creer nb-colonies colonies reparties sur la carte (id-colonie 0..n-1),
+  ;;        stock-colonie = stock-initial-colonie, forme "house".
+end
+
+to regenerer-points
+  ;; TODO : pour chaque patch "ravitaillement", stock-point augmente lentement
+  ;;        (par ex. +regeneration-point par tick) sans depasser stock-max-point.
+end
+
+to evenements-journaliers
+  ;; Une fois par jour (toutes les 24 ticks) :
+  ;; TODO : consommation de nourriture dans chaque colonie (consommation-jour par humain present).
+  ;; TODO : famine si le stock de la colonie ne suffit pas (morts par famine).
+  ;; TODO : reproduction (voir reproduire).
+end
+
+to reproduire
+  ;; TODO : pour chaque colonie, si stock-colonie > seuil-naissance, naissance d'un
+  ;;        humain sain avec une probabilite liee a taux-naissance (par jour).
+  ;; Reglage a verifier : sans zombies, la population doit rester stable.
+end
+
+to mourir [ cause ]
+  ;; cause : "infection", "attaque" ou "famine".
+  ;; TODO : incrementer le bon compteur puis retirer l'agent (die).
+end

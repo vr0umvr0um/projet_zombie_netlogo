@@ -1,0 +1,83 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ITERATION 2 - PARTIE A : zombies (cote zombie)
+;; Responsable : (a remplir)
+;; Creation, errance, poursuite, attaque au contact. Test : nb-zombies = 20, nb-obstacles = 0.
+;; Inspirations : Zombieland (Ball), The Walking Dead ABM (Buyukkinaci), Wolf Sheep Predation (Wilensky),
+;; Predator Prey Game HubNet.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Zones de depart : ni obstacle, ni a moins de 4 patchs d'une colonie
+to setup-zombies  
+  let candidats patches with [ type-patch != "obstacle" and not any? colonies in-radius 4 ]
+  if not any? candidats [ set candidats patches with [ type-patch != "obstacle" ] ]
+
+  create-zombies nb-zombies [
+    initialiser-zombie
+    move-to one-of candidats
+  ]
+  set nb-zombies-initial count zombies
+end
+
+;; Parametres communs a un zombie, utilises par setup-zombies et transformer
+to initialiser-zombie
+  set age-zombie 0
+  set shape "person"
+  set color violet
+end
+
+to zombie-agir
+  set age-zombie age-zombie + 1
+  ifelse age-zombie > duree-vie-zombie [
+    set nb-zombies-vieux nb-zombies-vieux + 1
+    die
+  ] [
+    ;; priorite : attaquer au contact (meme sans poursuite), puis poursuivre, puis errer
+    ifelse any? humains in-radius distance-contact
+      [ zombie-attaquer ]
+      [ ifelse any? humains in-radius portee-detection
+          [ zombie-poursuivre ]
+          [ zombie-errer ]
+      ]
+  ]
+end
+
+;; Marche aleatoire a petits virages (comme Zombieland), sans entrer dans un obstacle
+to zombie-errer
+  rt random-float 30
+  lt random-float 30
+  avancer-zombie
+end
+
+;; Se rapproche de l'humain le plus proche dans son rayon de detection
+to zombie-poursuivre
+  let cible min-one-of humains in-radius portee-detection [ distance myself ]
+  face cible
+  avancer-zombie
+end
+
+;; Attaque un humain tire au hasard parmi ceux au contact (one-of, comme Wolf Sheep Predation)
+to zombie-attaquer
+  let cible one-of humains in-radius distance-contact
+  ask cible [ detecter-et-defendre ]
+end
+
+;; Avance d'un pas si la case devant est franchissable, sinon demi-tour approximatif
+to avancer-zombie
+  ifelse case-franchissable? patch-ahead vitesse-zombie
+    [ fd vitesse-zombie ]
+    [ rt 150 + random 60 ]
+end
+
+;; Parametres fixes du zombie, regroupes ici pour etre modifies (ou mis en slider) au meme endroit
+to-report vitesse-zombie     ;; patchs par tick (un humain fait 1 patch par tick)
+  report 0.5
+end
+
+to-report distance-contact   ;; distance d'attaque, en patchs
+  report 1
+end
+
+;; Vrai si le patch existe (pas de bord de carte) et n'est pas un obstacle
+to-report case-franchissable? [ p ]
+  report p != nobody and [ type-patch ] of p != "obstacle"
+end
