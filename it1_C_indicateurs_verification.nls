@@ -1,8 +1,43 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ITERATION 1 - PARTIE C : indicateurs et verification
 ;; Responsable : (a remplir)
-;; Indicateurs de population et de stocks, invariants, courbes.
-;; A faire : regler taux-naissance (population stable sans zombie), scenarios de test, plafond de sorties (avec B).
+;; Indicateurs de population et de stocks, invariants, tests de l'iteration.
+;;
+;; Mode d'emploi :
+;;  - bouton "Test it1" (procedure tester-it1) : 20 graines, nb-zombies = 0, tableau et verdict
+;;    dans le Centre de commandes ;
+;;  - BehaviorSpace : it1-stabilite (criteres 2 a 4) et it1-reglage-taux-naissance
+;;    (choix de taux-naissance pour que la population reste stable sans zombie).
+;; Les criteres 1, 5 et 6 de PLAN_ITERATIONS.md se verifient a la main.
+;; Depend des parties A et B : tant qu'elles sont des squelettes, les tests s'executent mais echouent.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Seuils des criteres de sortie (a ajuster, a justifier dans le rapport)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report nb-graines-test
+  report 20
+end
+
+to-report seuil-survie-min     ;; proportion-survivants minimale a 720 ticks sans zombie
+  report 0.9
+end
+
+to-report seuil-survie-max     ;; proportion-survivants maximale a 720 ticks sans zombie
+  report 1.1
+end
+
+to-report seuil-famine         ;; part maximale d'humains morts de famine
+  report 0.05
+end
+
+to-report seuil-points-vides   ;; part maximale des ticks ou tous les points sont epuises
+  report 0.1
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Indicateurs
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to-report nb-humains-vivants
@@ -17,36 +52,137 @@ to-report proportion-survivants
     [ report 0 ]
 end
 
+;; Part des humains initiaux morts de famine
+to-report part-famine
+  ifelse nb-humains-initial > 0
+    [ report nb-morts-famine / nb-humains-initial ]
+    [ report 0 ]
+end
+
 to-report stock-total-colonies
-  report 0 ;; TODO : somme des stock-colonie
+  report sum [ stock-colonie ] of colonies
 end
 
 to-report stock-total-points
-  report 0 ;; TODO : somme des stock-point des patches "ravitaillement"
+  report sum [ stock-point ] of patches with [ type-patch = "ravitaillement" ]
 end
 
+;; Colonies abritant au moins un humain vivant non transforme
 to-report nb-colonies-actives
-  report 0 ;; TODO : colonies avec au moins un humain vivant non transforme
+  report count colonies with [ any? humains with [ colonie-origine = myself ] ]
+end
+
+;; Humains hors de leur colonie (en route vers un point ou de retour)
+to-report nb-humains-en-sortie
+  report count humains with [ mission != "colonie" ]
+end
+
+;; Plus grand nombre d'humains simultanement en sortie pour une meme colonie.
+;; Sert a choisir le plafond de sorties simultanees (decision B et C).
+to-report max-sorties-par-colonie
+  ifelse any? colonies
+    [ report max [ count humains with [ colonie-origine = myself and mission != "colonie" ] ] of colonies ]
+    [ report 0 ]
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Verification : invariants
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Liste des invariants violes (vide si tout va bien) : utile pour comprendre un echec
+to-report liste-invariants-violes
+  let violes []
+  if any? colonies with [ stock-colonie < 0 ]
+    [ set violes lput "stock de colonie negatif" violes ]
+  if any? patches with [ stock-point < 0 ]
+    [ set violes lput "stock de point de ravitaillement negatif" violes ]
+  if any? humains with [ nourriture-perso < 0 ]
+    [ set violes lput "nourriture transportee negative" violes ]
+  if any? humains with [ not (etat = "sain" or etat = "infecte") ]
+    [ set violes lput "etat d'humain invalide" violes ]
+  if any? humains with [ [ type-patch ] of patch-here = "obstacle" ]
+    [ set violes lput "humain sur un obstacle" violes ]
+
+  ;; conservation des humains : initiaux + naissances = vivants + transformes + morts
+  if (nb-humains-initial + nb-naissances) !=
+     (count humains + nb-transformations + nb-morts-infection + nb-morts-attaque + nb-morts-famine)
+    [ set violes lput "conservation des humains" violes ]
+
+  ;; conservation des zombies : initiaux + transformes = vivants + detruits + morts de vieillesse
+  if (nb-zombies-initial + nb-transformations) !=
+     (count zombies + nb-zombies-detruits + nb-zombies-vieux)
+    [ set violes lput "conservation des zombies" violes ]
+
+  ;; sans zombie initial (et sans infecte initial), aucune infection n'apparait
+  if nb-zombies-initial = 0 and nb-nouvelles-infections > 0
+    [ set violes lput "infection sans source" violes ]
+
+  report violes
 end
 
 ;; Vrai si tous les invariants sont respectes. A tester a la main ou dans BehaviorSpace
 to-report invariants-ok?
-  ;; stocks jamais negatifs
-  let stocks-ok? (all? colonies [ stock-colonie >= 0 ]) and (all? patches [ stock-point >= 0 ])
+  report empty? liste-invariants-violes
+end
 
-  ;; un seul etat par humain
-  let etats-ok? all? humains [ etat = "sain" or etat = "infecte" ]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test de l'iteration 1 : environnement / humain, sans zombie
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; conservation des humains : initiaux + naissances = vivants + transformes + morts
-  let humains-ok? (nb-humains-initial + nb-naissances) =
-    (count humains + nb-transformations + nb-morts-infection + nb-morts-attaque + nb-morts-famine)
+;; Une simulation complete (nb-zombies = 0) pour une graine donnee.
+;; Renvoie : [ graine  invariants-ok  proportion-survivants  part-famine
+;;             part-des-ticks-sans-point  max-sorties-par-colonie ]
+;; ATTENTION : appelle setup, donc efface la simulation en cours.
+to-report evaluer-it1 [ graine ]
+  let anciens-zombies nb-zombies
+  random-seed graine
+  set nb-zombies 0
+  setup
 
-  ;; conservation des zombies : initiaux + transformes = vivants + detruits + morts de vieillesse
-  let zombies-ok? (nb-zombies-initial + nb-transformations) =
-    (count zombies + nb-zombies-detruits + nb-zombies-vieux)
+  let ticks-sans-point 0
+  let max-dehors 0
+  let invariants-toujours-ok? true
+  while [ ticks < duree-simulation ] [
+    go
+    if stock-total-points = 0 [ set ticks-sans-point ticks-sans-point + 1 ]
+    set max-dehors max (list max-dehors max-sorties-par-colonie)
+    if not invariants-ok? [ set invariants-toujours-ok? false ]
+  ]
 
-  ;; sans zombie initial (et sans infecte initial), aucune infection n'apparait
-  let source-ok? (nb-zombies-initial > 0) or (nb-nouvelles-infections = 0)
+  set nb-zombies anciens-zombies
+  report (list graine invariants-toujours-ok? proportion-survivants part-famine
+               (ticks-sans-point / duree-simulation) max-dehors)
+end
 
-  report stocks-ok? and etats-ok? and humains-ok? and zombies-ok? and source-ok?
+;; Lance nb-graines-test simulations et affiche les criteres de sortie de l'iteration 1.
+;; Une erreur d'execution pendant le test signifie que le critere 1 n'est pas rempli.
+to tester-it1
+  print "=== Test iteration 1 (nb-zombies = 0) ==="
+  let resultats n-values nb-graines-test [ i -> evaluer-it1 (i + 1) ]
+
+  foreach resultats [ r ->
+    print (word "graine " item 0 r
+      " | invariants " item 1 r
+      " | survie " precision item 2 r 3
+      " | famine " precision item 3 r 3
+      " | sans point " precision item 4 r 3
+      " | max sorties/colonie " item 5 r)
+  ]
+
+  let invariants map [ r -> item 1 r ] resultats
+  let survies map [ r -> item 2 r ] resultats
+  let famines map [ r -> item 3 r ] resultats
+  let sans-point map [ r -> item 4 r ] resultats
+
+  print "--- Criteres de sortie ---"
+  print (word "1. aucune erreur sur " nb-graines-test " graines : vrai (le test est alle au bout)")
+  print (word "2. invariants vrais a chaque tick : " reduce [ [ a b ] -> a and b ] invariants)
+  print (word "3. survie entre " seuil-survie-min " et " seuil-survie-max " : "
+    ((min survies >= seuil-survie-min) and (max survies <= seuil-survie-max))
+    " (min " precision min survies 3 ", max " precision max survies 3 ")")
+  print (word "4. famine < " seuil-famine " et points epuises < " seuil-points-vides " des ticks : "
+    ((max famines < seuil-famine) and (max sans-point < seuil-points-vides))
+    " (famine max " precision max famines 3 ", sans point max " precision max sans-point 3 ")")
+  print (word "   plafond de sorties : max observe " max map [ r -> item 5 r ] resultats " humains par colonie")
+  print "5 et 6 : a verifier a la main (sortie complete, deux consommations documentees)."
 end
