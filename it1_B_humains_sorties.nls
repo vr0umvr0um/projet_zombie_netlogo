@@ -1,59 +1,202 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; ITERATION 1 - PARTIE B : humains et sorties de ravitaillement
-;; Responsable : (a remplir)
-;; Creation des humains, machine a etats des sorties, strategie individuelle fixe.
-;; Utilise mourir [cause] (partie A).
+;; ITERATION 1 - PARTIE B
+;; Humains et sorties individuelles de ravitaillement.
+;; Utilise mourir [cause] de la partie A.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Repartir les humains entre les colonies et initialiser leurs variables.
 to setup-humains
-  ;; TODO : creer nb-humains humains, repartis equitablement (100 / 4 = 25 par colonie),
-  ;;        places pres de leur colonie, etat "sain", mission "colonie",
-  ;;        groupe-id -1, nourriture-perso 0, chemin-aller vide.
+  let nombre-colonies count colonies
+  if nombre-colonies = 0 [ stop ]
+
+  let humains-par-colonie floor (nb-humains / nombre-colonies)
+  let humains-restants (nb-humains - humains-par-colonie * nombre-colonies)
+
+  foreach sort colonies [ colonie-actuelle ->
+    let effectif humains-par-colonie
+
+    ;; Distribuer le reste a raison d'un humain supplementaire par colonie.
+    if humains-restants > 0 [
+      set effectif effectif + 1
+      set humains-restants humains-restants - 1
+    ]
+
+    ask colonie-actuelle [
+      hatch-humains effectif [
+        set colonie-origine colonie-actuelle
+        set etat "sain"
+        set mission "colonie"
+        set groupe-id -1
+        set nourriture-perso 0
+        set chemin-aller []
+        set cible-point nobody
+        set shape "person"
+
+        ;; Placer l'humain sur une case vide voisine si possible.
+        let cases-libres neighbors4 with [ type-patch = "vide" ]
+        if any? cases-libres [
+          move-to one-of cases-libres
+        ]
+      ]
+    ]
+  ]
 end
 
+;; Executer une seule action par tick selon la mission.
 to humain-agir
-  ;; Machine a etats simple selon la mission.
-  ;; (iteration 2) si etat = "infecte", appeler evoluer-infection en premier (peut tuer ou transformer).
-  ;; TODO : selon mission :
-  ;;   "colonie" -> decider-sortie
-  ;;   "aller"   -> aller-vers-point
-  ;;   "retour"  -> rentrer-a-la-colonie
-  ;; NE PAS appeler detecter-et-defendre ici : les attaques sont declenchees par les
-  ;; zombies (it2_A), qui appellent eux-memes cette procedure sur l'humain attaque.
-  ;; Si evoluer-infection tue l'humain (mort ou transformation), il n'agit plus ensuite.
+  evoluer-infection
+  
+  ifelse mission = "colonie" [
+    decider-sortie
+  ] [
+    ifelse mission = "aller" [
+      aller-vers-point
+    ] [
+      if mission = "retour" [
+        rentrer-a-la-colonie
+      ]
+    ]
+  ]
 end
 
+;; Verifier si la colonie a besoin de nourriture et peut financer une sortie.
 to decider-sortie
-  ;; Strategie individuelle fixe : chaque humain agit seul.
-  ;; TODO : si stock-colonie < s-min, choisir un point de ravitaillement
-  ;;        (choisir-point) ; s'il n'y en a aucun, rester a la colonie.
-  ;; TODO : si strategie = "groupe fixe" ou "groupe adaptatif", deleguer a
-  ;;        decider-sortie-groupe (a ecrire dans une seconde etape).
+  let origine colonie-origine
+  let reserve [stock-colonie] of origine
+
+  if reserve >= s-min [ stop ]
+
+  ;; Plafond provisoire par colonie, a confirmer avec la partie C.
+  let plafond-sorties 1
+  let sorties-en-cours count humains with [
+    colonie-origine = origine and
+    (mission = "aller" or mission = "retour")
+  ]
+  if sorties-en-cours >= plafond-sorties [ stop ]
+
+  let trajet chemin-vers-ravitaillement
+  if empty? trajet [ stop ]
+
+  ;; La liste inclut la case de depart : longueur = nombre de pas + 1.
+  ;; Cette ration laisse une unite a l'arrivee. Regle a confirmer avec A.
+  let ration-depart length trajet
+  if ration-depart > reserve or ration-depart > capacite-transport [
+    stop
+  ]
+
+  ask origine [
+    set stock-colonie stock-colonie - ration-depart
+  ]
+
+  set nourriture-perso ration-depart
+  set chemin-aller trajet
+  set cible-point last trajet
+  set mission "aller"
 end
 
+;; Renvoyer le point au bout du trajet, ou nobody si aucun trajet n'existe.
 to-report choisir-point
-  ;; Point de ravitaillement le plus proche avec stock strictement > 0.
-  ;; TODO : retourner ce patch, ou nobody s'il n'y en a pas.
-  report nobody
+  let trajet chemin-vers-ravitaillement
+  if empty? trajet [ report nobody ]
+  report last trajet
 end
 
+;; Trouver le point approvisionne le plus proche en nombre de pas.
+to-report chemin-vers-ravitaillement
+  let depart patch-here
+  let file-attente (list (list depart))
+  let visites (patch-set depart)
+
+  ;; La file contient les trajets a explorer, du plus court au plus long.
+  while [not empty? file-attente] [
+    let trajet first file-attente
+    set file-attente but-first file-attente
+    let case-actuelle last trajet
+
+    if [type-patch] of case-actuelle = "ravitaillement" and
+       [stock-point] of case-actuelle > 0 [
+      report trajet
+    ]
+
+    ;; Quatre voisines possibles : haut, bas, gauche et droite.
+    let voisines [neighbors4] of case-actuelle
+    let voisines-libres voisines with [
+      type-patch != "obstacle" and not member? self visites
+    ]
+
+    foreach sort voisines-libres [ prochaine-case ->
+      ;; Marquer la case des son ajout pour eviter de l'explorer deux fois.
+      set visites (patch-set visites prochaine-case)
+      set file-attente lput (lput prochaine-case trajet) file-attente
+    ]
+  ]
+
+  report []
+end
+
+;; Avancer d'une case et consommer une unite par pas.
 to aller-vers-point
-  ;; TODO : avancer d'un patch vers cible-point en evitant les obstacles.
-  ;; TODO : memoriser le patch dans chemin-aller (pour le retour).
-  ;; TODO : consommer 1 unite de nourriture-perso par tick de deplacement ;
-  ;;        a 0 en route -> mort de famine (mourir "famine").
-  ;; TODO : a l'arrivee, appeler collecter.
-  ;; ATTENTION : deux consommations a distinguer dans le rapport
-  ;;   (1 unite par tick de deplacement / consommation-jour dans la colonie).
+  if patch-here = cible-point [
+    collecter
+    stop
+  ]
+
+  let indice position patch-here chemin-aller
+  let prochaine-case item (indice + 1) chemin-aller
+  move-to prochaine-case
+  set nourriture-perso nourriture-perso - 1
+
+  if nourriture-perso <= 0 [
+    mourir "famine"
+    stop
+  ]
+
+  if patch-here = cible-point [
+    collecter
+  ]
 end
 
+;; Prendre la quantite disponible dans la limite de la place restante.
 to collecter
-  ;; TODO : prendre min(stock-point, capacite-transport) ; stock-point diminue.
-  ;; TODO : passer mission a "retour".
+  ;; Relire le stock a l'arrivee : un autre humain a pu collecter avant.
+  let place-disponible max (list 0 (capacite-transport - nourriture-perso))
+  let quantite min (list ([stock-point] of cible-point) place-disponible)
+
+  ask cible-point [
+    set stock-point stock-point - quantite
+  ]
+
+  set nourriture-perso nourriture-perso + quantite
+  set mission "retour"
 end
 
+;; Suivre le meme trajet en sens inverse et deposer le reliquat.
 to rentrer-a-la-colonie
-  ;; TODO : rejouer chemin-aller a l'envers.
-  ;; TODO : a l'arrivee, deposer nourriture-perso dans stock-colonie, mission "colonie".
-  ;; Note : un humain infecte qui rentre peut contaminer la colonie (hypothese des groupes).
+  let indice position patch-here chemin-aller
+
+  if indice > 0 [
+    let prochaine-case item (indice - 1) chemin-aller
+    move-to prochaine-case
+    set nourriture-perso nourriture-perso - 1
+
+    if nourriture-perso <= 0 [
+      mourir "famine"
+      stop
+    ]
+  ]
+
+  ;; La premiere case du trajet est la case de depart de l'humain.
+  if patch-here = first chemin-aller [
+    let nourriture-rapportee nourriture-perso
+
+    ask colonie-origine [
+      set stock-colonie stock-colonie + nourriture-rapportee
+    ]
+
+    ;; Reinitialiser les variables de sortie pour la prochaine mission.
+    set nourriture-perso 0
+    set chemin-aller []
+    set cible-point nobody
+    set mission "colonie"
+  ]
 end
