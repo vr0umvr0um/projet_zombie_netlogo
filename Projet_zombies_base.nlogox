@@ -12,13 +12,8 @@ __includes [
   "it1_A_environnement_colonies.nls"
   "it1_B_humains_sorties.nls"
   "it1_C_indicateurs_verification.nls"
-  "it2_A_zombies.nls"
-  "it2_B_infection_defense.nls"
-  "it2_C_indicateurs_tests.nls"
 ]
 
-;; Developpement par iterations : voir PLAN_ITERATIONS.md.
-;; Un fichier par partie (A, B, C) et par iteration ; ajouter ici ceux des iterations suivantes.
 ;; Fichier commun : variables partagees, setup, go.
 ;; Toute modification des variables ci-dessous doit etre annoncee aux deux autres.
 
@@ -30,7 +25,6 @@ globals [
   ticks-par-jour           ;; 24 : 1 tick = 1 heure
   duree-simulation         ;; 720 ticks = 30 jours
   nb-humains-initial       ;; pour calculer la proportion de survivants
-  nb-zombies-initial       ;; pour l'invariant de conservation des zombies (partie C)
 
   ;; compteurs cumules (indicateurs de sortie, a remplir au fil de la simulation)
   nb-naissances
@@ -41,6 +35,7 @@ globals [
   nb-morts-infection
   nb-morts-attaque
   nb-morts-famine
+  nb-zombies-initial
 ]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -97,9 +92,10 @@ to setup
   setup-environnement
   setup-colonies
   setup-humains
-  setup-zombies
+  ; setup-zombies
 
   set nb-humains-initial count humains
+  set nb-zombies-initial count zombies
   reset-ticks
 end
 
@@ -113,7 +109,7 @@ to go
   ;; ordre d'ordonnancement a justifier dans le rapport (CM1)
   regenerer-points
   ask humains [ humain-agir ]
-  ask zombies [ zombie-agir ]
+  ; ask zombies [ zombie-agir ]
   if (ticks mod ticks-par-jour) = 0 [ evenements-journaliers ]
 
   tick
