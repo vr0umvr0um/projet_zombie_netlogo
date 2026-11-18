@@ -12,6 +12,9 @@ __includes [
   "it1_A_environnement_colonies.nls"
   "it1_B_humains_sorties.nls"
   "it1_C_indicateurs_verification.nls"
+  "it2_A_zombies.nls"
+  "it2_B_infection_defense.nls"
+  "it2_C_indicateurs_tests.nls"
 ]
 
 ;; Fichier commun : variables partagees, setup, go.
