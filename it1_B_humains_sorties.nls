@@ -140,6 +140,11 @@ to-report chemin-vers-ravitaillement
 end
 
 ;; Avancer d'une case et consommer une unite par pas.
+;; CONSOMMATION 2 SUR 2 (critere 6) : la consommation en deplacement. A chaque tick de marche,
+;; a l'aller comme au retour, l'humain consomme 1 unite de sa nourriture transportee
+;; (nourriture-perso), avancee par la colonie au depart (ration-depart). A 0 en route, il meurt
+;; de famine. Elle est distincte de la consommation quotidienne de la colonie (it1_A,
+;; evenements-journaliers).
 to aller-vers-point
   if patch-here = cible-point [
     collecter
