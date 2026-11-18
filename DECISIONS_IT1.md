@@ -140,7 +140,7 @@ Je recommande la première, avec une mention dans le rapport, et un examen de la
 
 **Mesure faite à l'application** : `tester-it1` complet (20 simulations de 720 ticks, en séquence, une seule machine) dure 180 secondes, soit environ **9 secondes par simulation**. Mon estimation initiale (plus de 20 secondes) était trop pessimiste : elle venait de balayages interrompus. À ce rythme, 240 simulations prennent environ 36 minutes en séquence, et moins avec `--threads` en parallèle. Cause probable, non mesurée : chaque humain d'une colonie recalcule un plus court chemin sur toute la carte à chaque tick quand le stock est sous `s-min`, même si aucune sortie n'est possible. Piste : ne décider qu'une fois par colonie et par tick. Priorité basse tant que les expériences de l'itération 5 ne sont pas lancées, mais 240 simulations de plus seront lentes.
 
-### D9 (proposée, non appliquée). Relever `stock-initial-point`
+### D9 (appliquée). Relever `stock-initial-point`
 
 Le critère 4 échoue à cause de colonies isolées (graine 8, voir plus bas). Une colonie dont les points sont loin ne peut partir que si un point contient plus de 2 × la longueur du trajet (D2). Avec `stock-initial-point = 50`, une colonie dont les points sont à plus de 25 pas ne peut jamais partir et s'éteint. Les stocks des points plafonnent à cette même valeur : ils ne se « rechargent » pas au-delà.
 
@@ -152,7 +152,7 @@ Test : réglages D1 à D7, `nb-zombies = 0`, plafond 1, 30 simulations par valeu
 | 100 | 1,003 | 0,77 | 29 / 30 | 1 / 30 | 0,24 | 0 |
 | **150** | **1,004** | **0,97** | **30 / 30** | **0 / 30** | **0,03** | 0 |
 
-Proposition : `stock-initial-point = 150`, ce qui règle le critère 4 dans ces 30 simulations. Contreparties : le stock total de nourriture sur la carte triple au départ (16 points × 150 au lieu de × 50), donc la rareté des ressources, qui est le moteur du modèle proie-prédateur, diminue ; la valeur est à discuter avec l'équipe (100 est un compromis, avec 1 simulation sur 30 encore au-dessus de 5 % de famine). Le critère 4 n'a pas été relancé avec `tester-it1` complet pour cette valeur : la mesure vient d'une expérience BehaviorSpace équivalente.
+**Appliquée : `stock-initial-point = 150`.** Résultats après application : famine à 5 % ou plus dans 0 simulation sur 30 (expérience ci-dessus), 1 sur 20 (`it1-stabilite`), soit 1 sur 50 contre 4 sur 30 avec 50 ; `tester-it1` complet (20 graines) : critère 3 vrai (19 sur 20, moyenne 0,994), invariants vrais. **Le critère 4 reste faux sur la graine 8** (famine 0,25) : sa colonie 3 est à 16 pas d'un point viable, donc elle n'est pas isolée, et elle s'éteint quand même (24 morts de famine, 1 survivant). La cause n'est donc pas seulement le stock maximal des points ; une course perdue entre deux colonies (D3) est la piste la plus probable, non vérifiée. Contreparties : le stock total de nourriture triple au départ, donc la rareté des ressources, moteur du modèle proie-prédateur, diminue.
 
 ## Statut d'application
 
@@ -166,6 +166,7 @@ Proposition : `stock-initial-point = 150`, ce qui règle le critère 4 dans ces 
 | D6 | `seuil-naissance = 80`, expérience étendue | seuil × taux, 10 simulations par case, puis `it1-stabilite` | survie 0,99 (0,97 à 1,02), 20 sur 20, famine max 4 %, 0,75 naissance en moyenne |
 | D7 | `tester-it1` (C), `PLAN_ITERATIONS.md` | `tester-it1` complet, 20 graines | critère 3 vrai (19 sur 20, moyenne 0,984) |
 | D8 | mesure, sans code | `tester-it1` complet | environ 9 s par simulation |
+| D9 | curseur `stock-initial-point` = 150 | expérience dédiée, `it1-stabilite`, `tester-it1` complet | famine ≥ 5 % : 1 simulation sur 50 (4 sur 30 avant) ; critère 3 vrai (moyenne 0,994) ; critère 4 faux sur la graine 8 |
 
 **Bilan de `tester-it1` après D1 à D7** : critères 1, 2 et 3 vrais. **Le critère 4 reste faux** : la famine maximale est de 0,28, à cause d'une seule graine (la 8) ; les 19 autres sont à 0,06 ou moins.
 
@@ -173,7 +174,7 @@ Proposition : `stock-initial-point = 150`, ce qui règle le critère 4 dans ces 
 
 ## Liste de la séance d'assemblage : résultats
 
-1. **D1 et D2 appliqués, `tester-it1` relancé** : fait (voir le statut ci-dessus). Critères 1, 2 et 3 vrais ; critère 4 faux à cause d'une graine (D9 le corrige dans une expérience équivalente).
+1. **D1 et D2 appliqués, `tester-it1` relancé** : fait (voir le statut ci-dessus). Critères 1, 2 et 3 vrais ; critère 4 faux à cause d'une seule graine (la 8), y compris après D9.
 2. **`it1-reglage-taux-naissance` du dépôt** (90 simulations, 10 par case) : `seuil-naissance = 80` et `taux-naissance = 0,01` donnent une survie de 1,00 (1,00 à 1,03), 10 simulations sur 10 dans l'intervalle, famine de 0,1 %, 0,5 naissance en moyenne. `seuil-naissance = 80` avec `taux-naissance = 0,05` convient aussi (10 sur 10, 4 naissances) ; à 0,1 la population dépasse trop souvent 1,1. Le réglage retenu est confirmé.
 3. **D7 validé** (critère 3 reformulé) ; **D5 comparé** : voir la section D5.
 4. **Critères 5 et 6 vérifiés à la main** :
@@ -209,7 +210,7 @@ Aux extrêmes, la prédiction tient : extinction à R < 1, persistance et quasi-
 | D6 | Naissances : expérience avant décision | A et C | à faire |
 | D7 | Critère 3 reformulé | C | choix de méthode |
 | D8 | Temps de calcul : à surveiller | B | mesuré (environ 9 s par simulation) |
-| D9 | `stock-initial-point` à 150 (proposée) | tous | bonne (30 simulations), à valider |
+| D9 | `stock-initial-point` à 150 (appliquée) | tous | moyenne : réduit la famine, ne corrige pas la graine 8 |
 
 ## À faire pendant la séance d'assemblage
 
