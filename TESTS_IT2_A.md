@@ -24,3 +24,12 @@ Les agents et compteurs ont été manipulés pour isoler chaque test. Ces états
 - Le test avec deux zombies ne vérifie pas que la défense cible toujours le zombie qui attaque : ce point reste à examiner avec B.
 - Les appels à setup-zombies et zombie-agir restent commentés dans le fichier principal ; leur activation et le branchement de evoluer-infection dans humain-agir restent à intégrer avec B.
 - Les probabilités extrêmes servent aux tests. Valeurs de départ à rétablir avant les essais normaux : proba-defense 0.3, proba-infection 0.5, portee-detection 3 ; nb-obstacles 0 pour cette itération.
+
+## Mise à jour après l'assemblage des itérations 1 et 2
+
+Les points ci-dessus ont évolué depuis ces premiers essais ; le texte d'origine est conservé tel quel.
+
+- **Réglé** : `setup-zombies` et `zombie-agir` ne sont plus commentés dans le fichier principal, et `evoluer-infection` est branché dans `humain-agir` (partie B).
+- **Réglé** : le test est maintenant automatique. `tester-it2` (bouton « Test it2 ») reprend les scénarios d'attaque et d'issue de l'infection, puis lance 20 simulations de 720 ticks, avec invariants vérifiés à chaque tick ; il n'y a plus de limite « pas de campagne automatique ».
+- **Valeurs de départ** : `proba-defense` est maintenant **0,125** (décision D11, `DECISIONS_IT1.md`) et non plus 0,3 ; `proba-infection` (0,5) et `portee-detection` (3) sont inchangées ; `nb-obstacles = 0` est appliqué par le test de l'itération 2.
+- **Toujours ouvert** : la défense (`detecter-et-defendre`, partie B) cible le zombie le plus proche au contact, pas forcément celui qui attaque ; le test avec deux zombies ne le vérifie pas.

@@ -29,7 +29,8 @@ Le détail des critères de sortie est dans [PLAN_ITERATIONS.md](PLAN_ITERATIONS
 
 1. Ouvrir `Projet_zombies_base.nlogox` dans NetLogo (les fichiers `.nls` doivent rester dans le même dossier).
 2. Cliquer sur `setup`, puis sur `go` : la simulation s'arrête à 720 ticks (30 jours, 1 tick = 1 heure).
-3. Les curseurs règlent les paramètres ; le sélecteur `strategie` est prévu pour l'itération 4.
+3. Le curseur `delai-tick` règle la vitesse : pause en secondes après chaque tick (0,05 par défaut, soit environ 40 secondes pour les 30 jours ; 0 pour la vitesse maximale). Le curseur de vitesse de NetLogo, en haut de la fenêtre, agit aussi sur l'affichage. Le moniteur « Temps simulé » indique le jour et l'heure.
+4. Les autres curseurs règlent les paramètres ; le sélecteur `strategie` est prévu pour l'itération 4.
 
 Réglages par défaut retenus (justification dans `DECISIONS_IT1.md`) :
 
@@ -62,7 +63,7 @@ Les variables communes (`globals`, `*-own`) sont dans le fichier principal : tou
 
 ## Tests et expériences
 
-- **Boutons « Test it1 » et « Test it2 »** (procédures `tester-it1` et `tester-it2`) : lancent 20 graines et affichent les critères de sortie dans le Centre de commandes (comptez quelques minutes chacun).
+- **Boutons « Test it1 » et « Test it2 »** (procédures `tester-it1-pas` et `tester-it2-pas`) : lancent 20 graines et affichent les critères de sortie dans le Centre de commandes (comptez quelques minutes chacun). Ce sont des boutons « forever » : **recliquer dessus arrête le test**, le relancer le reprend, et « setup » l'annule. Le moniteur « Test en cours » indique la graine et le jour. Les procédures `tester-it1` et `tester-it2` font la même chose d'un seul bloc, sans interruption possible : elles servent à la ligne de commande.
 - **`invariants-ok?`** : vrai si les stocks sont positifs, les états valides, les humains et les zombies conservés, et aucune infection n'apparaît sans zombie. `liste-invariants-violes` dit lequel échoue.
 - **Expériences BehaviorSpace** : `it1-stabilite`, `it1-reglage-taux-naissance`, `it2-courbes`.
 
