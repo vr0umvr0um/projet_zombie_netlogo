@@ -14,7 +14,7 @@ Ce README explique comment utiliser le dépôt. Le raisonnement scientifique (qu
 |---|---|---|
 | 1 | environnement / humain (colonies, nourriture, sorties individuelles, reproduction) | terminée : critères 1 à 6 vérifiés |
 | 2 | humain / zombie (attaque, défense, infection, transformation) | terminée : critères 1 à 4 vérifiés, courbes tracées |
-| 3 | environnement / zombie (obstacles et bords) | à démarrer |
+| 3 | environnement / zombie (obstacles et bords) | squelette prêt, logique à écrire |
 | 4 | stratégies de groupe (groupe fixe, groupe adaptatif) | à faire |
 | 5 | sensibilité, calibration, validation, rapport | à faire |
 
@@ -54,6 +54,9 @@ Un fichier par partie (A, B, C) et par itération, inclus dans le fichier princi
 | `it2_A_zombies.nls` | création et comportement des zombies |
 | `it2_B_infection_defense.nls` | défense, infection, transformation (côté humain) |
 | `it2_C_indicateurs_tests.nls` | indicateurs d'infection, scénarios unitaires, `tester-it2` |
+| `it3_A_zombies_obstacles.nls` | squelette : déplacement des zombies autour des obstacles et des bords |
+| `it3_B_zombies_parametres.nls` | squelette : vitesse, portée et durée de vie des zombies |
+| `it3_C_indicateurs_tests.nls` | squelette : indicateurs spatiaux, invariants, `tester-it3` |
 | `analyse/` | scripts Python d'analyse |
 | `results/` | CSV produits par BehaviorSpace |
 | `figures/` | figures produites par les scripts |

@@ -68,13 +68,15 @@ Le code des parties A et B de cette itération est déjà écrit (relu, à teste
 
 ## Itération 3 - environnement / zombie
 
-**Réglages de test** : `nb-obstacles` normal, tous les agents présents.
+**Réglages de test** : `nb-obstacles = 30` (valeur par défaut), `nb-zombies = 20`, tous les agents présents. `proba-defense = 0,125` a été choisie sans obstacle (décision D11) : elle est à revalider ici.
 
-| Partie | Contenu prévu |
-|---|---|
-| A | Déplacement des zombies autour des obstacles et des bords (aucun zombie ne reste bloqué) |
-| B | Durée de vie, vitesse et portée de détection des zombies ; réglage de leur effectif |
-| C | Indicateurs spatiaux (carte de densité des zombies), invariant « aucun zombie sur un obstacle », courbes |
+| Partie | Fichier | Contenu |
+|---|---|---|
+| A | `it3_A_zombies_obstacles.nls` | déplacement des zombies autour des obstacles et des bords (aucun zombie ne reste bloqué) |
+| B | `it3_B_zombies_parametres.nls` | durée de vie, vitesse et portée de détection des zombies ; réglage de leur effectif |
+| C | `it3_C_indicateurs_tests.nls` | indicateurs spatiaux (carte de densité des zombies), invariant « aucun zombie sur un obstacle », `tester-it3`, courbes |
+
+Les trois fichiers sont des squelettes commentés : structure, procédures vides marquées `TODO`, aucun comportement nouveau.
 
 **Critères de sortie** : aucun zombie sur un obstacle ni hors carte ; moins de 5 % de zombies immobiles ; 20 graines du modèle complet sans erreur ; vitesse, portée et durée de vie des zombies fixées et justifiées.
 
