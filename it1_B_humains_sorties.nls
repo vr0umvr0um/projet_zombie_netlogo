@@ -66,7 +66,9 @@ to decider-sortie
 
   if reserve >= s-min [ stop ]
 
-  ;; Plafond provisoire par colonie, a confirmer avec la partie C.
+  ;; Decision D3 (DECISIONS_IT1.md) : plafond de 1 sortie simultanee par colonie, confirme.
+  ;; C'est la valeur qui donne la meilleure survie (plafond 2 ou 4 : survie plus basse,
+  ;; cause non expliquee). A reexaminer a l'iteration 4 (groupes, departs simultanes).
   let plafond-sorties 1
   let sorties-en-cours count humains with [
     colonie-origine = origine and
