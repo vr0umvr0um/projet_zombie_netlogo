@@ -17,6 +17,8 @@ __includes [
   "it2_C_indicateurs_tests.nls"
 ]
 
+;; Developpement par iterations : voir PLAN_ITERATIONS.md.
+;; Un fichier par partie (A, B, C) et par iteration ; ajouter ici ceux des iterations suivantes.
 ;; Fichier commun : variables partagees, setup, go.
 ;; Toute modification des variables ci-dessous doit etre annoncee aux deux autres.
 
@@ -38,7 +40,7 @@ globals [
   nb-morts-infection
   nb-morts-attaque
   nb-morts-famine
-  nb-zombies-initial
+  nb-zombies-initial       ;; pour l'invariant de conservation des zombies (partie C)
 ]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -95,7 +97,7 @@ to setup
   setup-environnement
   setup-colonies
   setup-humains
-  ; setup-zombies
+  setup-zombies
 
   set nb-humains-initial count humains
   set nb-zombies-initial count zombies
@@ -112,7 +114,7 @@ to go
   ;; ordre d'ordonnancement a justifier dans le rapport (CM1)
   regenerer-points
   ask humains [ humain-agir ]
-  ; ask zombies [ zombie-agir ]
+  ask zombies [ zombie-agir ]
   if (ticks mod ticks-par-jour) = 0 [ evenements-journaliers ]
 
   tick
@@ -122,6 +124,8 @@ end
     <view x="368" wrappingAllowedX="false" y="10" frameRate="30.0" minPycor="-16" height="434" showTickCounter="true" patchSize="13.0" fontSize="10" wrappingAllowedY="false" width="434" tickCounterLabel="ticks" maxPycor="16" updateMode="0" maxPxcor="16" minPxcor="-16"></view>
     <button x="10" y="20" height="40" disableUntilTicks="false" forever="false" kind="Observer" width="100" display="Initialisation">setup</button>
     <button x="10" y="70" height="40" disableUntilTicks="false" forever="true" kind="Observer" width="101" display="Simulation">go</button>
+    <button x="10" y="475" height="35" disableUntilTicks="false" forever="false" kind="Observer" width="100" display="Test it1">tester-it1</button>
+    <button x="115" y="475" height="35" disableUntilTicks="false" forever="false" kind="Observer" width="100" display="Test it2">tester-it2</button>
     <chooser x="10" y="120" height="60" variable="strategie" current="0" width="150" display="strategie">
       <choice type="string" value="individuelle"></choice>
       <choice type="string" value="groupe fixe"></choice>
@@ -1037,5 +1041,67 @@ Quelle strategie de ravitaillement (individuelle, groupe fixe, groupe adaptatif)
       </indicator>
     </shape>
   </linkShapes>
+  <experiments>
+    <experiment name="it1-stabilite" repetitions="20" sequentialRunOrder="true" runMetricsEveryStep="false" timeLimit="720">
+      <setup>setup</setup>
+      <go>go</go>
+      <metrics>
+        <metric>invariants-ok?</metric>
+        <metric>proportion-survivants</metric>
+        <metric>part-famine</metric>
+        <metric>nb-naissances</metric>
+        <metric>stock-total-colonies</metric>
+        <metric>stock-total-points</metric>
+        <metric>nb-colonies-actives</metric>
+      </metrics>
+      <constants>
+        <enumeratedValueSet variable="nb-zombies">
+          <value value="0"></value>
+        </enumeratedValueSet>
+      </constants>
+    </experiment>
+    <experiment name="it1-reglage-taux-naissance" repetitions="10" sequentialRunOrder="true" runMetricsEveryStep="false" timeLimit="720">
+      <setup>setup</setup>
+      <go>go</go>
+      <metrics>
+        <metric>proportion-survivants</metric>
+        <metric>nb-naissances</metric>
+        <metric>part-famine</metric>
+      </metrics>
+      <constants>
+        <enumeratedValueSet variable="nb-zombies">
+          <value value="0"></value>
+        </enumeratedValueSet>
+        <enumeratedValueSet variable="taux-naissance">
+          <value value="0.0025"></value>
+          <value value="0.005"></value>
+          <value value="0.01"></value>
+          <value value="0.02"></value>
+          <value value="0.04"></value>
+        </enumeratedValueSet>
+      </constants>
+    </experiment>
+    <experiment name="it2-courbes" repetitions="20" sequentialRunOrder="true" runMetricsEveryStep="true" timeLimit="720">
+      <setup>setup</setup>
+      <go>go</go>
+      <metrics>
+        <metric>count humains</metric>
+        <metric>count zombies</metric>
+        <metric>nb-infectes</metric>
+        <metric>nb-nouvelles-infections</metric>
+        <metric>nb-transformations</metric>
+        <metric>nb-zombies-detruits</metric>
+        <metric>nb-morts-infection</metric>
+      </metrics>
+      <constants>
+        <enumeratedValueSet variable="nb-zombies">
+          <value value="20"></value>
+        </enumeratedValueSet>
+        <enumeratedValueSet variable="nb-obstacles">
+          <value value="0"></value>
+        </enumeratedValueSet>
+      </constants>
+    </experiment>
+  </experiments>
   <previewCommands>setup repeat 75 [ go ]</previewCommands>
 </model>
