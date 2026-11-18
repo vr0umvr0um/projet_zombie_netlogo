@@ -1,43 +1,146 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ITERATION 1 - PARTIE A : environnement et colonies
-;; Responsable : (a remplir)
+;; Responsable : Soumia
 ;; Carte, obstacles, points de ravitaillement, colonies, consommation, famine, reproduction, mort.
 ;; Test : nb-zombies = 0. Fournit mourir [cause] aux autres parties.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to setup-environnement
-  ;; TODO : initialiser tous les patches (type "vide", stock 0).
-  ;; TODO : poser nb-obstacles patches "obstacle" (couleur sombre).
-  ;; TODO : poser nb-points-ravitaillement patches "ravitaillement" avec
-  ;;        stock-point = stock-initial-point (et stock-max-point = meme valeur).
-  ;;        Eviter de les poser sur un obstacle ou trop pres d'une colonie.
-  ;; TODO : colorer les patches selon le stock (comme l'herbe de Wolf Sheep Predation).
+  ;; Initialiser les cases de la carte
+  ask patches [
+    set type-patch "vide"
+    set stock-point 0
+    set stock-max-point 0
+    set pcolor brown
+  ]
+
+  ;; Placer les obstacles au hasard
+  ask n-of nb-obstacles patches [
+    set type-patch "obstacle"
+    set pcolor gray
+  ]
+
+  ;; Placer les points de ravitaillement hors des obstacles
+  ask n-of nb-points-ravitaillement patches with [type-patch = "vide"] [
+    set type-patch "ravitaillement"
+    set stock-point stock-initial-point
+    set stock-max-point stock-initial-point
+    set pcolor green
+  ]
 end
 
 to setup-colonies
-  ;; TODO : creer nb-colonies colonies reparties sur la carte (id-colonie 0..n-1),
-  ;;        stock-colonie = stock-initial-colonie, forme "house".
+  let numero 0
+
+  repeat nb-colonies [
+    ;; Choisir une case libre, assez loin des autres colonies
+    let emplacement one-of patches with [
+      type-patch = "vide"
+      and not any? colonies in-radius 6
+      and not any? (patches in-radius 3) with [
+        type-patch = "ravitaillement"
+      ]
+    ]
+
+    if emplacement = nobody [
+      error "Pas assez de place pour installer les colonies."
+    ]
+
+    create-colonies 1 [
+      move-to emplacement
+      set id-colonie numero
+      set stock-colonie stock-initial-colonie
+      set shape "house"
+      set color blue
+      set size 2
+    ]
+
+    set numero numero + 1
+  ]
 end
 
+
 to regenerer-points
-  ;; TODO : pour chaque patch "ravitaillement", stock-point augmente lentement
-  ;;        (par ex. +regeneration-point par tick) sans depasser stock-max-point.
+  ask patches with [type-patch = "ravitaillement"] [
+    set stock-point stock-point + regeneration-point
+
+    if stock-point > stock-max-point [
+      set stock-point stock-max-point
+    ]
+
+    ifelse stock-max-point > 0 [
+      set pcolor scale-color green stock-point 0 stock-max-point
+    ] [
+      set pcolor black
+    ]
+  ]
 end
 
 to evenements-journaliers
-  ;; Une fois par jour (toutes les 24 ticks) :
-  ;; TODO : consommation de nourriture dans chaque colonie (consommation-jour par humain present).
-  ;; TODO : famine si le stock de la colonie ne suffit pas (morts par famine).
-  ;; TODO : reproduction (voir reproduire).
+  ask colonies [
+    let maison self
+
+    let habitants humains with [
+      colonie-origine = maison and mission = "colonie"
+    ]
+
+    ask habitants [
+      ifelse [stock-colonie] of maison >= consommation-jour [
+        ask maison [
+          set stock-colonie stock-colonie - consommation-jour
+        ]
+      ] [
+        mourir "famine"
+      ]
+    ]
+  ]
+
+  reproduire
 end
 
 to reproduire
-  ;; TODO : pour chaque colonie, si stock-colonie > seuil-naissance, naissance d'un
-  ;;        humain sain avec une probabilite liee a taux-naissance (par jour).
-  ;; Reglage a verifier : sans zombies, la population doit rester stable.
+  ask colonies [
+    let maison self
+    let habitants humains with [colonie-origine = maison]
+
+    if any? habitants [
+      if stock-colonie > seuil-naissance [
+        if random-float 1 < taux-naissance [
+          hatch-humains 1 [
+            set colonie-origine maison
+            set etat "sain"
+            set date-infection -1
+            set nourriture-perso 0
+            set mission "colonie"
+            set cible-point nobody
+            set chemin-aller []
+            set groupe-id -1
+            set shape "person"
+            set color blue
+            set size 1
+          ]
+
+          set nb-naissances nb-naissances + 1
+        ]
+      ]
+    ]
+  ]
 end
 
+
 to mourir [ cause ]
-  ;; cause : "infection", "attaque" ou "famine".
-  ;; TODO : incrementer le bon compteur puis retirer l'agent (die).
+  if cause = "infection" [
+    set nb-morts-infection nb-morts-infection + 1
+  ]
+
+  if cause = "attaque" [
+    set nb-morts-attaque nb-morts-attaque + 1
+  ]
+
+  if cause = "famine" [
+    set nb-morts-famine nb-morts-famine + 1
+  ]
+
+  die
 end
+
