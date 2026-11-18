@@ -76,6 +76,10 @@ to regenerer-points
   ]
 end
 
+;; Decision D5 (DECISIONS_IT1.md) : regle de famine inchangee. Chaque humain present non
+;; nourri meurt le jour meme ; quand le stock d'une colonie tombe a zero, tous ses habitants
+;; restants meurent donc ensemble. Un delai de grace n'est a envisager que si le critere 4
+;; de l'iteration 1 resiste apres D1 et D2.
 to evenements-journaliers
   ask colonies [
     let maison self
