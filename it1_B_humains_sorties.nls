@@ -113,8 +113,11 @@ to-report chemin-vers-ravitaillement
     set file-attente but-first file-attente
     let case-actuelle last trajet
 
+    ;; Decision D2 (DECISIONS_IT1.md) : une sortie doit etre rentable. Elle coute environ
+    ;; 2 x distance (avance prelevee a l'aller + trajet de retour) : le point doit contenir
+    ;; plus que cela, sinon on cherche un point plus riche, meme plus loin.
     if [type-patch] of case-actuelle = "ravitaillement" and
-       [stock-point] of case-actuelle > 0 [
+       [stock-point] of case-actuelle > 2 * length trajet [
       report trajet
     ]
 
