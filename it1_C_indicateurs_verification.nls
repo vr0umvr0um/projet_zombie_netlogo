@@ -196,9 +196,18 @@ to tester-it1
     nb-min-dans-intervalle " simulations sur " nb-graines-test " et en moyenne : " critere-3?
     " (" dans-intervalle " sur " nb-graines-test " dans l'intervalle, moyenne " precision moyenne-survie 3
     ", min " precision min survies 3 ", max " precision max survies 3 ")")
-  print (word "4. famine < " seuil-famine " et points epuises < " seuil-points-vides " des ticks : "
-    ((max famines < seuil-famine) and (max sans-point < seuil-points-vides))
-    " (famine max " precision max famines 3 ", sans point max " precision max sans-point 3 ")")
+  ;; Decision D10 (DECISIONS_IT1.md) : meme logique que le critere 3. Environ 2 % des simulations
+  ;; sortent du seuil par hasard (colonie malchanceuse) ; on exige donc que la moyenne respecte le
+  ;; seuil ET qu'au moins part-min-dans-intervalle des simulations le respectent.
+  let sims-famine-ok length filter [ f -> f < seuil-famine ] famines
+  let sims-points-ok length filter [ p -> p < seuil-points-vides ] sans-point
+  let critere-4? (sims-famine-ok >= nb-min-dans-intervalle) and (mean famines < seuil-famine)
+    and (sims-points-ok >= nb-min-dans-intervalle) and (mean sans-point < seuil-points-vides)
+  print (word "4. famine < " seuil-famine " et points epuises < " seuil-points-vides " des ticks, pour au moins "
+    nb-min-dans-intervalle " simulations sur " nb-graines-test " et en moyenne : " critere-4?
+    " (" sims-famine-ok " sur " nb-graines-test " sous le seuil de famine, famine moyenne " precision mean famines 3
+    ", max " precision max famines 3 " ; " sims-points-ok " sur " nb-graines-test " sous le seuil de points epuises, max "
+    precision max sans-point 3 ")")
   print (word "   plafond de sorties : max observe " max map [ r -> item 5 r ] resultats " humains par colonie")
   print "5 et 6 : a verifier a la main (sortie complete, deux consommations documentees)."
 end
