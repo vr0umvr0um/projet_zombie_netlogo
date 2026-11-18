@@ -152,7 +152,7 @@ end
     <slider x="625" step="1" y="695" max="50" width="250" display="capacite-transport" height="50" min="1" direction="Horizontal" default="50.0" variable="capacite-transport"></slider>
     <slider x="365" step="0.5" y="755" max="10" width="250" display="portee-detection" height="50" min="0.5" direction="Horizontal" default="3.0" variable="portee-detection"></slider>
     <slider x="625" step="0.05" y="755" max="1" width="250" display="proba-infection" height="50" min="0" direction="Horizontal" default="0.5" variable="proba-infection"></slider>
-    <slider x="365" step="0.05" y="815" max="1" width="250" display="proba-defense" height="50" min="0" direction="Horizontal" default="0.3" variable="proba-defense"></slider>
+    <slider x="365" step="0.025" y="815" max="1" width="250" display="proba-defense" height="50" min="0" direction="Horizontal" default="0.125" variable="proba-defense"></slider>
     <slider x="625" step="1" y="815" max="240" width="250" display="delai-transformation" height="50" min="1" direction="Horizontal" default="48.0" variable="delai-transformation" units="ticks"></slider>
     <slider x="365" step="0.05" y="875" max="1" width="250" display="proba-mort-infection" height="50" min="0" direction="Horizontal" default="0.3" variable="proba-mort-infection"></slider>
     <slider x="625" step="10" y="875" max="720" width="250" display="duree-vie-zombie" height="50" min="10" direction="Horizontal" default="480.0" variable="duree-vie-zombie" units="ticks"></slider>
