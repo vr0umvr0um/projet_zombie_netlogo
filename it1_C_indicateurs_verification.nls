@@ -4,13 +4,25 @@
 ;; Indicateurs de population et de stocks, invariants, tests de l'iteration.
 ;;
 ;; Mode d'emploi :
-;;  - bouton "Test it1" (procedure tester-it1) : 20 graines, nb-zombies = 0, tableau et verdict
-;;    dans le Centre de commandes ;
+;;  - bouton "Test it1" (procedure tester-it1-pas, bouton "forever") : 20 graines, nb-zombies = 0,
+;;    tableau et verdict dans le Centre de commandes. Recliquer sur le bouton arrete le test ;
+;;    tester-it1 fait la meme chose d'un seul bloc (ligne de commande, BehaviorSpace) ;
 ;;  - BehaviorSpace : it1-stabilite (criteres 2 a 4) et it1-reglage-taux-naissance
 ;;    (choix de taux-naissance pour que la population reste stable sans zombie).
 ;; Les criteres 1, 5 et 6 de PLAN_ITERATIONS.md se verifient a la main.
 ;; Depend des parties A et B : tant qu'elles sont des squelettes, les tests s'executent mais echouent.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Declaration de variables : elle doit preceder les procedures (voir plus bas, 'Test').
+;; Etat du test pas a pas. clear-all (dans setup) remet ces variables a 0 : commencer-simulation-it1
+;; les sauvegarde et les restaure autour de setup.
+globals [
+  test1-graine             ;; 0 = pas de test en cours ; sinon numero de la graine en cours
+  test1-resultats          ;; liste des resultats des graines terminees
+  test1-ticks-sans-point
+  test1-max-dehors
+  test1-invariants-ok?
+]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Seuils des criteres de sortie (a ajuster, a justifier dans le rapport)
@@ -138,6 +150,12 @@ end
 ;; Test de l'iteration 1 : environnement / humain, sans zombie
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Deux facons de lancer le test, qui donnent exactement les memes resultats :
+;;  - tester-it1 : d'un seul bloc (ligne de commande, BehaviorSpace). On ne peut pas l'interrompre ;
+;;  - tester-it1-pas : bouton "Test it1" (bouton "forever"). Chaque passage avance le test d'un jour
+;;    simule (24 ticks). Recliquer sur le bouton l'arrete a tout moment ; le relancer reprend la ou
+;;    il en etait. Cliquer sur "setup" annule le test en cours.
+
 ;; Une simulation complete (nb-zombies = 0) pour une graine donnee.
 ;; Renvoie : [ graine  invariants-ok  proportion-survivants  part-famine
 ;;             part-des-ticks-sans-point  max-sorties-par-colonie ]
@@ -163,21 +181,17 @@ to-report evaluer-it1 [ graine ]
                (ticks-sans-point / duree-simulation) max-dehors)
 end
 
-;; Lance nb-graines-test simulations et affiche les criteres de sortie de l'iteration 1.
-;; Une erreur d'execution pendant le test signifie que le critere 1 n'est pas rempli.
-to tester-it1
-  print "=== Test iteration 1 (nb-zombies = 0) ==="
-  let resultats n-values nb-graines-test [ i -> evaluer-it1 (i + 1) ]
+to afficher-ligne-it1 [ r ]
+  print (word "graine " item 0 r
+    " | invariants " item 1 r
+    " | survie " precision item 2 r 3
+    " | famine " precision item 3 r 3
+    " | sans point " precision item 4 r 3
+    " | max sorties/colonie " item 5 r)
+end
 
-  foreach resultats [ r ->
-    print (word "graine " item 0 r
-      " | invariants " item 1 r
-      " | survie " precision item 2 r 3
-      " | famine " precision item 3 r 3
-      " | sans point " precision item 4 r 3
-      " | max sorties/colonie " item 5 r)
-  ]
-
+;; Affiche les criteres de sortie de l'iteration 1 a partir de la liste des resultats.
+to afficher-criteres-it1 [ resultats ]
   let invariants map [ r -> item 1 r ] resultats
   let survies map [ r -> item 2 r ] resultats
   let famines map [ r -> item 3 r ] resultats
@@ -210,4 +224,83 @@ to tester-it1
     precision max sans-point 3 ")")
   print (word "   plafond de sorties : max observe " max map [ r -> item 5 r ] resultats " humains par colonie")
   print "5 et 6 : a verifier a la main (sortie complete, deux consommations documentees)."
+end
+
+;; Test d'un seul bloc : nb-graines-test simulations, puis les criteres de sortie.
+;; Une erreur d'execution pendant le test signifie que le critere 1 n'est pas rempli.
+to tester-it1
+  print "=== Test iteration 1 (nb-zombies = 0) ==="
+  let resultats n-values nb-graines-test [ i -> evaluer-it1 (i + 1) ]
+  foreach resultats [ r -> afficher-ligne-it1 r ]
+  afficher-criteres-it1 resultats
+end
+
+;; Test pas a pas (bouton "Test it1", "forever"). Meme procedure que tester-it1, decoupee en jours.
+to tester-it1-pas
+  if test1-graine = 0 [ demarrer-test-it1 ]
+  ifelse ticks < duree-simulation [
+    repeat ticks-par-jour [
+      if ticks < duree-simulation [ mesurer-un-tick-it1 ]
+    ]
+  ] [
+    enregistrer-simulation-it1
+    ifelse test1-graine < nb-graines-test [
+      commencer-simulation-it1 (test1-graine + 1)
+    ] [
+      afficher-criteres-it1 test1-resultats
+      set test1-graine 0
+      stop
+    ]
+  ]
+end
+
+to demarrer-test-it1
+  print "=== Test iteration 1 (nb-zombies = 0) ==="
+  set test1-resultats []
+  commencer-simulation-it1 1
+end
+
+;; Lance la simulation d'une graine. nb-zombies n'est lu que dans setup : on le remet tout de suite
+;; a sa valeur, le curseur n'est donc jamais laisse a 0.
+to commencer-simulation-it1 [ graine ]
+  let resultats test1-resultats
+  let anciens-zombies nb-zombies
+  random-seed graine
+  set nb-zombies 0
+  setup
+  set nb-zombies anciens-zombies
+  set test1-resultats resultats
+  set test1-graine graine
+  set test1-ticks-sans-point 0
+  set test1-max-dehors 0
+  set test1-invariants-ok? true
+end
+
+;; Un tick et les mesures, dans le meme ordre que evaluer-it1 (memes resultats par graine).
+to mesurer-un-tick-it1
+  go
+  if stock-total-points = 0 [ set test1-ticks-sans-point test1-ticks-sans-point + 1 ]
+  set test1-max-dehors max (list test1-max-dehors max-sorties-par-colonie)
+  if not invariants-ok? [ set test1-invariants-ok? false ]
+end
+
+to enregistrer-simulation-it1
+  let r (list test1-graine test1-invariants-ok? proportion-survivants part-famine
+              (test1-ticks-sans-point / duree-simulation) test1-max-dehors)
+  set test1-resultats lput r test1-resultats
+  afficher-ligne-it1 r
+end
+
+;; Texte du moniteur "Test en cours" de l'interface.
+to-report progression-test
+  let jour floor (ticks / ticks-par-jour)
+  ifelse test1-graine > 0 [
+    report (word "it1 : graine " test1-graine " sur " nb-graines-test ", jour " jour " sur 30")
+  ] [
+    ifelse test2-graine > 0 [
+      report (word "it2 : simulation " test2-graine " sur " (nb-graines-test + 1) ", jour " jour " sur 30")
+    ] [
+      report "aucun"
+    ]
+  ]
 end

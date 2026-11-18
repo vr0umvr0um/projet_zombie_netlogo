@@ -4,13 +4,25 @@
 ;; Infectes, part d'infectes, scenarios unitaires, courbes humains/zombies.
 ;;
 ;; Mode d'emploi :
-;;  - bouton "Test it2" (procedure tester-it2) : scenarios unitaires puis 20 graines,
-;;    tableau et verdict dans le Centre de commandes ;
+;;  - bouton "Test it2" (procedure tester-it2-pas, bouton "forever") : scenarios unitaires puis 20 graines,
+;;    tableau et verdict dans le Centre de commandes. Recliquer sur le bouton arrete le test ;
+;;    tester-it2 fait la meme chose d'un seul bloc (ligne de commande, BehaviorSpace) ;
 ;;  - BehaviorSpace it2-courbes : humains(t) et zombies(t) sur 20 graines (CSV pour Python).
 ;; Reglages de l'iteration : nb-zombies = 20, nb-obstacles = 0 (appliques par le test).
 ;; Depend des parties A et B, et de it1_C (invariants) : le test echoue tant que
 ;; mourir [ cause ] (it1_A) n'est pas ecrit, car evoluer-infection l'appelle.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Declaration de variables : elle doit preceder les procedures (voir plus bas, 'Test').
+;; Etat du test pas a pas (voir it1_C : clear-all remet ces variables a 0).
+globals [
+  test2-graine             ;; 0 = pas de test ; 1 a nb-graines-test : avec zombies ; nb-graines-test + 1 : sans zombie
+  test2-resultats          ;; resultats des simulations avec zombies terminees
+  test2-sans-zombie        ;; resultat de la simulation sans zombie
+  test2-pic
+  test2-tick-pic
+  test2-invariants-ok?
+]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Indicateurs
@@ -44,9 +56,14 @@ end
 
 ;; Repart d'un monde propre : plus aucun agent, compteurs a zero, sans zombie ni obstacle
 to preparer-test
+  let anciens-zombies nb-zombies
+  let anciens-obstacles nb-obstacles
   set nb-zombies 0
   set nb-obstacles 0
   setup
+  ;; ces curseurs ne sont lus que dans setup : on les remet, le test ne les laisse pas a 0
+  set nb-zombies anciens-zombies
+  set nb-obstacles anciens-obstacles
   ask turtles [ die ]
 end
 
@@ -154,8 +171,13 @@ end
 ;; Test de l'iteration 2
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-to tester-it2
-  print "=== Test iteration 2 (humain / zombie) ==="
+;; Comme pour l'iteration 1 (voir it1_C) :
+;;  - tester-it2 : d'un seul bloc, sans interruption possible ;
+;;  - tester-it2-pas : bouton "Test it2" ("forever"). Les scenarios d'attaque sont executes au premier
+;;    clic (quelques secondes), puis chaque passage avance d'un jour simule. Recliquer arrete le test.
+
+;; Criteres 1 et 2 : attaques isolees et issue de l'infection.
+to afficher-scenarios-it2
   let n nb-essais-attaque
 
   ;; --- critere 1 : scenarios d'attaque ---
@@ -184,18 +206,100 @@ to tester-it2
   print (word "part de morts " precision part-morts 3 " (attendu proba-mort-infection " proba-mort-infection " +/- " tolerance-frequence ") : "
     (abs (part-morts - proba-mort-infection) <= tolerance-frequence))
 
-  ;; --- criteres 3 a 5 : simulations completes ---
   print "--- Criteres 3 a 5 : simulations completes (nb-zombies = 20, nb-obstacles = 0) ---"
   print "graine | invariants | pic zombies (tick) | humains fin | zombies fin | infections | transformations | morts infection | zombies detruits"
-  let resultats n-values nb-graines-test [ i -> evaluer-it2 (i + 1) 20 ]
-  foreach resultats [ r ->
-    print (word item 0 r " | " item 1 r " | " item 2 r " (" item 3 r ") | " item 4 r " | " item 5 r " | " item 6 r
-      " | " item 7 r " | " item 8 r " | " item 9 r)
-  ]
-  let sans-zombie evaluer-it2 1 0
-  print (word "3. invariants vrais a chaque tick (20 graines) : " reduce [ [ a b ] -> a and b ] map [ r -> item 1 r ] resultats)
+end
+
+to afficher-ligne-it2 [ r ]
+  print (word item 0 r " | " item 1 r " | " item 2 r " (" item 3 r ") | " item 4 r " | " item 5 r " | " item 6 r
+    " | " item 7 r " | " item 8 r " | " item 9 r)
+end
+
+;; Criteres 3 a 5, a partir des resultats avec zombies et du resultat sans zombie.
+to afficher-criteres-it2 [ resultats sans-zombie ]
+  print (word "3. invariants vrais a chaque tick (" nb-graines-test " graines) : " reduce [ [ a b ] -> a and b ] map [ r -> item 1 r ] resultats)
   print (word "3. nb-zombies = 0 : infections " item 6 sans-zombie " (attendu 0) : " (item 6 sans-zombie = 0))
   print "4. aucune erreur d'execution : vrai (le test est alle au bout)"
-  print "5. courbes : lancer l'experience BehaviorSpace it2-courbes, puis tracer humains(t) et zombies(t) en Python."
+  print "5. courbes : lancer l'experience BehaviorSpace it2-courbes, puis python analyse/courbes_it2.py."
+end
+
+;; Test d'un seul bloc.
+to tester-it2
+  print "=== Test iteration 2 (humain / zombie) ==="
+  afficher-scenarios-it2
+  let resultats n-values nb-graines-test [ i -> evaluer-it2 (i + 1) 20 ]
+  foreach resultats [ r -> afficher-ligne-it2 r ]
+  let sans-zombie evaluer-it2 1 0
+  afficher-criteres-it2 resultats sans-zombie
   preparer-test
+end
+
+;; Test pas a pas (bouton "Test it2", "forever").
+to tester-it2-pas
+  if test2-graine = 0 [ demarrer-test-it2 ]
+  ifelse ticks < duree-simulation [
+    repeat ticks-par-jour [
+      if ticks < duree-simulation [ mesurer-un-tick-it2 ]
+    ]
+  ] [
+    enregistrer-simulation-it2
+    ifelse test2-graine <= nb-graines-test [
+      commencer-simulation-it2 (test2-graine + 1)
+    ] [
+      afficher-criteres-it2 test2-resultats test2-sans-zombie
+      set test2-graine 0
+      stop
+    ]
+  ]
+end
+
+to demarrer-test-it2
+  print "=== Test iteration 2 (humain / zombie) ==="
+  afficher-scenarios-it2
+  set test2-resultats []
+  commencer-simulation-it2 1
+end
+
+;; Simulation numero "numero" : 1 a nb-graines-test avec 20 zombies, puis la derniere sans zombie
+;; (graine 1). nb-zombies et nb-obstacles ne sont lus que dans setup : on les remet tout de suite.
+to commencer-simulation-it2 [ numero ]
+  let resultats test2-resultats
+  let sans-zombie test2-sans-zombie
+  let sans-zombie? numero > nb-graines-test
+  let anciens-zombies nb-zombies
+  let anciens-obstacles nb-obstacles
+  random-seed (ifelse-value sans-zombie? [ 1 ] [ numero ])
+  set nb-zombies (ifelse-value sans-zombie? [ 0 ] [ 20 ])
+  set nb-obstacles 0
+  setup
+  set nb-zombies anciens-zombies
+  set nb-obstacles anciens-obstacles
+  set test2-resultats resultats
+  set test2-sans-zombie sans-zombie
+  set test2-graine numero
+  set test2-pic 0
+  set test2-tick-pic 0
+  set test2-invariants-ok? true
+end
+
+;; Un tick et les mesures, dans le meme ordre que evaluer-it2 (memes resultats par graine).
+to mesurer-un-tick-it2
+  go
+  if count zombies > test2-pic [
+    set test2-pic count zombies
+    set test2-tick-pic ticks
+  ]
+  if not invariants-ok? [ set test2-invariants-ok? false ]
+end
+
+to enregistrer-simulation-it2
+  let graine (ifelse-value (test2-graine > nb-graines-test) [ 1 ] [ test2-graine ])
+  let r (list graine test2-invariants-ok? test2-pic test2-tick-pic count humains count zombies
+              nb-nouvelles-infections nb-transformations nb-morts-infection nb-zombies-detruits)
+  ifelse test2-graine > nb-graines-test [
+    set test2-sans-zombie r
+  ] [
+    set test2-resultats lput r test2-resultats
+    afficher-ligne-it2 r
+  ]
 end
