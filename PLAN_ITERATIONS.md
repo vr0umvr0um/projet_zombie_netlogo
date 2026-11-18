@@ -49,7 +49,7 @@ Les fichiers des itérations 3 à 5 sont créés au début de chaque itération.
 
 ## Itération 2 - humain / zombie
 
-**Réglages de test** : `nb-zombies = 20`, `nb-obstacles = 0`, pour isoler l'interaction humain/zombie.
+**Réglages de test** : `nb-zombies = 20`, `nb-obstacles = 0`, `proba-defense = 0,125` (décision D11), pour isoler l'interaction humain/zombie.
 
 | Partie | Fichier | Contenu |
 |---|---|---|

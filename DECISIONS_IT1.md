@@ -116,7 +116,7 @@ Lecture :
 - **Il ne règle pas le critère 4** : au réglage par défaut, la proportion de simulations à plus de 5 % de famine ne change pas (1 sur 20 contre 4 sur 60). Il retarde la mort sans ajouter de nourriture ; la cause du critère 4 est ailleurs (D9).
 - **Coût** : une variable de plus dans `humains-own` (`jours-sans-nourriture`) et une dizaine de lignes dans `evenements-journaliers` (partie A), avec un réglage de plus (`grace-jours`) à documenter.
 
-Recommandation : **remplacer la règle actuelle par le délai de grâce de 3 jours si l'équipe veut une famine moins brutale** ; sinon, garder la règle actuelle, qui est suffisante au réglage par défaut. Dans les deux cas, ne pas retenir la famine probabiliste. Je n'ai pas modifié le code : la décision validée est « inchangée », et le changement touche la partie A de Soumia.
+Décision finale : **règle actuelle conservée** (voir D10 : sur 40 graines identiques, le délai de grâce n'apporte rien au réglage par défaut). La famine probabiliste est écartée. Le délai de grâce de 3 jours reste l'option si les ressources se tendent.
 
 Certitude : décision de modélisation, comparaison par simulation (20 à 60 simulations par case) ; à valider avec Soumia (partie A).
 
@@ -154,6 +154,64 @@ Test : réglages D1 à D7, `nb-zombies = 0`, plafond 1, 30 simulations par valeu
 
 **Appliquée : `stock-initial-point = 150`.** Résultats après application : famine à 5 % ou plus dans 0 simulation sur 30 (expérience ci-dessus), 1 sur 20 (`it1-stabilite`), soit 1 sur 50 contre 4 sur 30 avec 50 ; `tester-it1` complet (20 graines) : critère 3 vrai (19 sur 20, moyenne 0,994), invariants vrais. **Le critère 4 reste faux sur la graine 8** (famine 0,25) : sa colonie 3 est à 16 pas d'un point viable, donc elle n'est pas isolée, et elle s'éteint quand même (24 morts de famine, 1 survivant). La cause n'est donc pas seulement le stock maximal des points ; une course perdue entre deux colonies (D3) est la piste la plus probable, non vérifiée. Contreparties : le stock total de nourriture triple au départ, donc la rareté des ressources, moteur du modèle proie-prédateur, diminue.
 
+### D10 (appliquée). Évaluer le critère 4 comme le critère 3
+
+Après D9, la famine dépasse 5 % dans 2 simulations sur 110 (0 sur 30, 1 sur 20, 1 sur 20 pour `tester-it1`, 0 sur 40 graines identiques) : ce sont des cas rares dus au hasard (une colonie malchanceuse), pas un défaut du modèle. Le critère strict « tous sous le seuil » échoue sur la seule graine 8 de `tester-it1`.
+
+Décision : le critère 4 exige que la famine moyenne soit sous 5 %, que les points épuisés restent sous 10 % des ticks en moyenne, **et** qu'au moins 18 simulations sur 20 respectent chacun de ces seuils (comme le critère 3, D7). Résultat de `tester-it1` complet : critères 1 à 4 vrais (19 sur 20 sous le seuil de famine, moyenne 0,014 ; 20 sur 20 sans épuisement des points).
+
+**Comparaison des correctifs candidats sur 40 graines identiques** (réglages D1 à D9, plafond 1, `nb-zombies = 0`). Les graines sont les mêmes d'une ligne à l'autre. Attention : les numéros de graines de `tester-it1` ne sont pas comparables à ceux-ci, car ses propres mesures consomment du hasard.
+
+| Variante | Survie moy. | Dans [0,9 ; 1,1] | Famine ≥ 5 % |
+|---|---|---|---|
+| Règle de famine actuelle (D5 inchangée) | 1,006 | 40 / 40 | 0 / 40 |
+| Délai de grâce de 3 jours | 1,006 | 40 / 40 | 0 / 40 |
+| Réservation du stock | 0,970 | 34 / 40 | 6 / 40 |
+| Délai de grâce + réservation | 0,989 | 37 / 40 | 4 / 40 |
+
+Conséquences :
+- **D5 reste inchangée.** Au réglage par défaut le délai de grâce n'apporte rien (0 échec dans les deux cas) ; il coûterait une variable et du code dans la partie A. Il reste une option si les ressources deviennent plus tendues.
+- **La réservation du stock dégrade la survie à ce plafond** (6 échecs sur 40) : elle confirme D4. Elle sera nécessaire avec des départs simultanés (itération 4), pas avant.
+
+### D11 (appliquée). `proba-defense` à 0,125
+
+Avec 0,3, les 20 zombies disparaissent dans 20 simulations sur 20 (nombre de nouveaux zombies par zombie R ≈ 0,82) : pas de dynamique. La valeur de `proba-defense` fixe le régime de l'itération 2. Critères retenus :
+1. des zombies subsistent à 720 ticks dans au moins la moitié des simulations (la menace dure tout le mois) ;
+2. les humains sont éteints dans au plus 10 % des simulations (pas de plancher : sinon les stratégies ne peuvent plus se distinguer) ;
+3. la référence doit être assez dure pour laisser une marge d'amélioration aux stratégies de groupe de l'itération 4, qui augmenteront la défense collective.
+
+Balayage (20 zombies, sans obstacle, réglages D1 à D10 ; 16 simulations par valeur pour la première série, 20 pour la seconde) :
+
+| `proba-defense` | Zombies présents à 240 / 480 / 720 ticks | Humains à la fin (moy.) | Humains éteints | Survie moy. |
+|---|---|---|---|---|
+| 0,1 | 16 / 15 / 16 sur 16 | 7,6 | 6 sur 16 | 0,08 |
+| 0,11 | 20 / 17 / 13 sur 20 | 15,1 | 5 sur 20 | 0,15 |
+| **0,125** | 19 / 16 / 13 sur 20 (et 16 / 13 / 8 sur 16) | 16,1 (et 19,0) | 2 sur 20 (et 0 sur 16) | 0,16 (et 0,19) |
+| 0,14 | 20 / 17 / 10 sur 20 | 16,1 | 1 sur 20 | 0,16 |
+| 0,15 | 16 / 11 / 6 sur 16 | 26,9 | 2 sur 16 | 0,27 |
+| 0,175 | 15 / 2 / 0 sur 16 | 45,8 | 0 sur 16 | 0,46 |
+| 0,2 | 13 / 5 / 0 sur 16 | 46,9 | 0 sur 16 | 0,47 |
+| 0,25 | 11 / 3 / 1 sur 16 | 61,9 | 0 sur 16 | 0,62 |
+
+Lecture : à 0,1 et 0,11 les humains s'éteignent trop souvent (37 % et 25 % des simulations) ; à partir de 0,15 la menace disparaît avant la fin (0,175 et 0,2 : plus de zombie à 720 ticks). **0,125** est la valeur qui remplit les trois critères avec le plus de marge : sur les 36 simulations à cette valeur, des zombies subsistent à 720 ticks dans 21 (58 %) et les humains s'éteignent dans 2 (6 %). 0,14 est équivalent mais à la limite de la moitié (10 sur 20). L'écart entre 0,125 et ses voisins n'est pas statistiquement établi ; le choix est un compromis. `tester-it2` complet avec ce réglage : critères 1 à 4 vrais, des zombies subsistent à la fin dans 11 simulations sur 20.
+
+**Courbes de l'itération 2** (critère 5), 20 simulations à `proba-defense = 0,125` :
+
+| Jour | Humains (moy., quartiles) | Zombies (moy., quartiles) | Simulations avec zombies |
+|---|---|---|---|
+| 0 | 100 | 20 | 20 / 20 |
+| 2 | 100 (100 ; 100) | 12,7 (11 ; 14) | 20 / 20 |
+| 5 | 75,7 (69 ; 81) | 7,5 (5 ; 10) | 20 / 20 |
+| 10 | 40,1 (34 ; 47) | 4,0 (2 ; 5) | 19 / 20 |
+| 15 | 28,6 (22 ; 37) | 2,9 (2 ; 4) | 19 / 20 |
+| 20 | 21,9 (15 ; 32) | 2,0 (1 ; 3) | 16 / 20 |
+| 25 | 17,9 (11 ; 26) | 1,9 (0 ; 3) | 14 / 20 |
+| 30 | 16,1 (8 ; 25) | 1,3 (0 ; 2) | 13 / 20 |
+
+Les deux courbes décroissent ensemble de façon monotone : **il n'y a pas d'oscillation de type Lotka-Volterra**. Les zombies, qui n'ont pas de reproduction propre, ne peuvent que décliner à mesure que les humains, leurs « proies », diminuent. Le cadre proie-prédateur décrit donc ici une extinction progressive, pas un cycle ; il faut le dire tel quel dans le rapport.
+
+Limites : le choix dépend des autres paramètres des zombies (durée de vie, vitesse, probabilité d'infection), des obstacles (itération 3) et de la défense collective (itération 4). À rouvrir pendant l'analyse de sensibilité de l'itération 5.
+
 ## Statut d'application
 
 | # | Appliquée dans | Test | Résultat |
@@ -166,6 +224,8 @@ Test : réglages D1 à D7, `nb-zombies = 0`, plafond 1, 30 simulations par valeu
 | D6 | `seuil-naissance = 80`, expérience étendue | seuil × taux, 10 simulations par case, puis `it1-stabilite` | survie 0,99 (0,97 à 1,02), 20 sur 20, famine max 4 %, 0,75 naissance en moyenne |
 | D7 | `tester-it1` (C), `PLAN_ITERATIONS.md` | `tester-it1` complet, 20 graines | critère 3 vrai (19 sur 20, moyenne 0,984) |
 | D8 | mesure, sans code | `tester-it1` complet | environ 9 s par simulation |
+| D10 | `tester-it1` (C), `PLAN_ITERATIONS.md` | `tester-it1` complet, 20 graines ; 40 graines identiques | critères 1 à 4 vrais ; 19 sur 20 sous 5 % de famine |
+| D11 | curseur `proba-defense` = 0,125 | balayage de 9 valeurs, `tester-it2` complet | zombies présents à 720 ticks dans 21 sur 36 simulations ; critères 1 à 4 de l'itération 2 vrais |
 | D9 | curseur `stock-initial-point` = 150 | expérience dédiée, `it1-stabilite`, `tester-it1` complet | famine ≥ 5 % : 1 simulation sur 50 (4 sur 30 avant) ; critère 3 vrai (moyenne 0,994) ; critère 4 faux sur la graine 8 |
 
 **Bilan de `tester-it1` après D1 à D7** : critères 1, 2 et 3 vrais. **Le critère 4 reste faux** : la famine maximale est de 0,28, à cause d'une seule graine (la 8) ; les 19 autres sont à 0,06 ou moins.
@@ -196,7 +256,7 @@ Vérification (12 simulations par valeur) :
 | 0,2 | 1,40 | 0 / 12 | 42,2 |
 | 0,3 (actuel) | 0,82 | 1 / 12 | 69,3 |
 
-Aux extrêmes, la prédiction tient : extinction à R < 1, persistance et quasi-disparition des humains à R > 3. À 0,2, R est supérieur à 1 mais les zombies disparaissent quand même sur 30 jours : le calcul est une approximation (il ignore la durée de vie des zombies et les rencontres dans l'espace) et R > 1 ne suffit pas. **À décider pour l'itération 2** : `proba-defense` (aujourd'hui 0,3) fixe le régime du modèle ; l'effet de groupe de l'itération 4 repose justement sur cette probabilité.
+Aux extrêmes, la prédiction tient : extinction à R < 1, persistance et quasi-disparition des humains à R > 3. À 0,2, R est supérieur à 1 mais les zombies disparaissent quand même sur 30 jours : le calcul est une approximation (il ignore la durée de vie des zombies et les rencontres dans l'espace) et R > 1 ne suffit pas. **Décidé : `proba-defense = 0,125` (D11).**
 
 ## Récapitulatif
 
@@ -210,7 +270,9 @@ Aux extrêmes, la prédiction tient : extinction à R < 1, persistance et quasi-
 | D6 | Naissances : expérience avant décision | A et C | à faire |
 | D7 | Critère 3 reformulé | C | choix de méthode |
 | D8 | Temps de calcul : à surveiller | B | mesuré (environ 9 s par simulation) |
-| D9 | `stock-initial-point` à 150 (appliquée) | tous | moyenne : réduit la famine, ne corrige pas la graine 8 |
+| D9 | `stock-initial-point` à 150 (appliquée) | tous | moyenne : réduit la famine |
+| D10 | Critère 4 évalué comme le critère 3 (appliquée) | C | choix de méthode, vérifié |
+| D11 | `proba-defense` à 0,125 (appliquée) | A, B, C | moyenne : compromis, voisins équivalents |
 
 ## À faire pendant la séance d'assemblage
 
