@@ -83,7 +83,7 @@ Certitude : décision de modélisation, non testée ; à valider avec Soumia (pa
 
 Dans le régime proposé, la moyenne des naissances sur 20 simulations est de 0 : le stock par colonie reste autour de 100, sous `seuil-naissance = 120`. De plus, à 0,01 par jour et par colonie, il y aurait au plus environ 1 naissance en 30 jours. Le critère 3 (population entre 0,9 et 1,1) est donc atteint sans reproduction.
 
-Décision : lancer `it1-reglage-taux-naissance` une fois D1 et D2 appliqués, avec `seuil-naissance` entre 60 et 120, et choisir la valeur qui garde la population dans l'intervalle. Je ne propose pas de valeur sans cette expérience.
+Décision : lancer `it1-reglage-taux-naissance` une fois D1 et D2 appliqués, avec `seuil-naissance` entre 60 et 120, et choisir la valeur qui garde la population dans l'intervalle. Je ne proposais pas de valeur sans cette expérience. Résultat : `seuil-naissance = 80` (égal à `s-min`) et `taux-naissance = 0,01` (voir « Statut d'application » plus bas).
 
 ### D7. Reformuler le critère 3 en tenant compte du hasard
 
@@ -97,7 +97,24 @@ Je recommande la première, avec une mention dans le rapport, et un examen de la
 
 ### D8. Surveiller le temps de calcul
 
-Une simulation complète prend plus de 20 secondes avec le vrai code (un balayage de 24 simulations n'a pas fini en 9 minutes en séquentiel), contre quelques secondes avec une version simplifiée. Cause probable, non mesurée : chaque humain d'une colonie recalcule un plus court chemin sur toute la carte à chaque tick quand le stock est sous `s-min`, même si aucune sortie n'est possible. Piste : ne décider qu'une fois par colonie et par tick. Priorité basse tant que les expériences de l'itération 5 ne sont pas lancées, mais 240 simulations de plus seront lentes.
+**Mesure faite à l'application** : `tester-it1` complet (20 simulations de 720 ticks, en séquence, une seule machine) dure 180 secondes, soit environ **9 secondes par simulation**. Mon estimation initiale (plus de 20 secondes) était trop pessimiste : elle venait de balayages interrompus. À ce rythme, 240 simulations prennent environ 36 minutes en séquence, et moins avec `--threads` en parallèle. Cause probable, non mesurée : chaque humain d'une colonie recalcule un plus court chemin sur toute la carte à chaque tick quand le stock est sous `s-min`, même si aucune sortie n'est possible. Piste : ne décider qu'une fois par colonie et par tick. Priorité basse tant que les expériences de l'itération 5 ne sont pas lancées, mais 240 simulations de plus seront lentes.
+
+## Statut d'application
+
+| # | Appliquée dans | Test | Résultat |
+|---|---|---|---|
+| D1 | curseurs par défaut | `it1-stabilite`, 20 simulations | survie 0,89, 14 sur 20 dans l'intervalle, famine 11 % |
+| D2 | `chemin-vers-ravitaillement` (B) | `it1-stabilite`, 20 simulations | survie 0,98, 19 sur 20, famine 1,8 % |
+| D3 | commentaire dans `decider-sortie` (B) | compilation | plafond de 1 confirmé |
+| D4 | commentaire dans `collecter` (B) | compilation | pas de réservation |
+| D5 | commentaire dans `evenements-journaliers` (A) | compilation | famine inchangée |
+| D6 | `seuil-naissance = 80`, expérience étendue | seuil × taux, 10 simulations par case, puis `it1-stabilite` | survie 0,99 (0,97 à 1,02), 20 sur 20, famine max 4 %, 0,75 naissance en moyenne |
+| D7 | `tester-it1` (C), `PLAN_ITERATIONS.md` | `tester-it1` complet, 20 graines | critère 3 vrai (19 sur 20, moyenne 0,984) |
+| D8 | mesure, sans code | `tester-it1` complet | environ 9 s par simulation |
+
+**Bilan de `tester-it1` après D1 à D7** : critères 1, 2 et 3 vrais. **Le critère 4 reste faux** : la famine maximale est de 0,28, à cause d'une seule graine (la 8) ; les 19 autres sont à 0,06 ou moins.
+
+**Pourquoi la graine 8** (diagnostic jour par jour) : une colonie placée à environ 11 patchs du point le plus proche (les trois autres à 4, 8 et 11) épuise son stock vers le jour 9, et ses 25 habitants meurent en deux jours. La décision D2 y contribue probablement : un point n'est accepté que s'il contient plus de 2 × la longueur du trajet, or `stock-initial-point` vaut 50, donc une colonie dont les points sont à plus de 25 pas ne peut plus jamais partir. Hypothèse non testée : relever `stock-initial-point`. Elle n'a pas été appliquée, car elle ne fait pas partie des décisions validées.
 
 ## Récapitulatif
 
