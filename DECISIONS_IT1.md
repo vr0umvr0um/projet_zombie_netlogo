@@ -63,15 +63,31 @@ Le plafond de la partie B (1 par colonie) est le meilleur testé, contrairement 
 
 Même sens dans tous les balayages : dans l'un d'eux, le plafond de 1 fait mieux que celui de 2 dans 11 paires de configurations sur 12 (l'exception, 8 points, capacité 50, consommation 0,5, est dans le bruit : 0,21 contre 0,24).
 
-**Ce que je n'ai pas réussi à expliquer.** J'ai testé deux hypothèses, sans les confirmer :
-- une course aux points (plusieurs humains visent le même stock) : réserver le stock au départ améliore le plafond 2 (0,70 → 0,81) et le plafond 4 (0,30 → 0,66), sans atteindre le plafond 1 ;
-- l'avance de nourriture prélevée sur la colonie : une marge de sécurité avant départ n'apporte rien de net (plafond 4 : 0,38 → 0,50 puis 0,55 ; plafond 1 : 0,76 → 0,79 puis 0,62, donc sans effet lisible).
+**Pourquoi plus de sorties simultanées dégrade la survie : mécanisme confirmé.** Les deux hypothèses de la première version de ce document ont été testées par des expériences causales (on supprime un mécanisme et on regarde si l'effet disparaît), avec un modèle instrumenté (compteurs de morts en route, de « courses perdues » et de morts à la colonie dans les 24 h après un départ). Réglages D1 + D2 + D6, `nb-zombies = 0`, 16 simulations par case.
 
-Décision : ne pas relever le plafond pour l'itération 1. Reprendre la question à l'itération 4, où les groupes imposent des départs simultanés.
+*Hypothèse 1 : la course aux points. Confirmée.* Quand plusieurs humains visent le même point, le stock a baissé à l'arrivée : l'humain rapporte moins que prévu et ne peut plus payer son retour. Dans toutes les configurations, le nombre de morts de famine en route est **exactement** égal au nombre de courses perdues (plafond 2 : 20,8 et 20,8 ; plafond 4 : 56,9 et 56,9) : toute course perdue est mortelle.
+
+*Hypothèse 2 : l'avance de nourriture prélevée sur la colonie. Confirmée.* Une sortie retire au stock de la colonie une avance égale à la longueur du trajet (de l'ordre de 10 à 20 unités) ; si l'humain meurt en route, l'avance est perdue, et le stock tombé à zéro tue les habitants au passage du jour.
+
+| Variante (16 simulations par case) | Plafond 1 | Plafond 2 | Plafond 4 |
+|---|---|---|---|
+| Référence : survie | 0,98 | 0,73 | 0,20 |
+| Référence : morts en route (= courses perdues) | 0,7 | 20,8 | 56,9 |
+| Référence : morts à la colonie (dont dans les 24 h après un départ) | 1,4 (0) | 6,5 (2,6) | 23,8 (18,8) |
+| Points sans concurrence (le stock ne baisse pas) : survie | 1,01 | 1,01 | 1,01 |
+| Avance gratuite (rien n'est prélevé à la colonie) : survie | 1,00 | 0,91 | 0,65 |
+| Avance gratuite : morts à la colonie | 0 | 0 | 0 |
+
+- Sans concurrence pour les points, **plus aucune famine** à aucun plafond : la course aux points explique l'essentiel de la dégradation.
+- Avec l'avance gratuite, **la famine à la colonie disparaît entièrement**, mais les morts en route restent : c'est bien la deuxième étape de la chaîne (course perdue, puis mort en route, puis avance perdue, puis colonie à sec). Dans la référence, 39 % (plafond 2) à 79 % (plafond 4) des morts à la colonie surviennent dans les 24 h après un départ.
+- **Réserver le stock au départ** supprime exactement les courses perdues : morts en route et courses perdues passent à 0 à tous les plafonds. Survie : 1,01 → 0,96 (plafond 1), 0,74 → 0,92 (plafond 2), 0,22 → 0,76 (plafond 4). Elle ne rejoint pas le plafond 1 parce que l'avance continue de vider la colonie.
+- **Une marge de sécurité avant départ** (le stock restant après l'avance doit couvrir 2, 4 ou 8 jours de consommation) fait bien disparaître ce qu'elle vise : avec la réservation au plafond 2, les morts à la colonie dans les 24 h après un départ passent de 5,1 à 0. Mais la survie ne bouge pas (0,90 contre 0,88, 0,78 et 0,88). L'explication de ce résultat nul de la première version : une **troisième cause**, indépendante des départs, domine (voir D9, colonies isolées). Les cases du plafond 4 avec marge sont incomplètes (4 à 7 simulations) et ne sont pas utilisées.
+
+Décision : ne pas relever le plafond pour l'itération 1. Pour l'itération 4, où les groupes imposent des départs simultanés, la réservation du stock deviendra nécessaire (elle supprime les courses perdues) et il faudra aussi limiter l'avance prélevée sur une colonie.
 
 ### D4. Ne pas implémenter la réservation de stock maintenant
 
-Au plafond de 1, la réservation ne change rien (0,99 → 1,0 à consommation 0,25 ; 0,83 → 0,78 à 0,5, dans le bruit). Elle ajoute une variable (`reservation`) et du code de coordination pour aucun gain mesuré. À reconsidérer à l'itération 4.
+Au plafond de 1, la réservation ne change rien (0,99 → 1,0 à consommation 0,25 ; 0,83 → 0,78 à 0,5, dans le bruit). Elle ajoute une variable (`reservation`) et du code de coordination pour aucun gain mesuré à ce plafond. Elle supprime pourtant exactement les courses aux points (voir D3) : elle devient nécessaire dès que plusieurs humains partent ensemble, à l'itération 4.
 
 ### D5. Laisser la règle de famine de la partie A inchangée
 

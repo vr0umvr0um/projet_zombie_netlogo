@@ -67,8 +67,9 @@ to decider-sortie
   if reserve >= s-min [ stop ]
 
   ;; Decision D3 (DECISIONS_IT1.md) : plafond de 1 sortie simultanee par colonie, confirme.
-  ;; C'est la valeur qui donne la meilleure survie (plafond 2 ou 4 : survie plus basse,
-  ;; cause non expliquee). A reexaminer a l'iteration 4 (groupes, departs simultanes).
+  ;; C'est la valeur qui donne la meilleure survie. Cause des plafonds 2 et 4 mesuree : courses
+  ;; aux points (une course perdue = un mort en route), puis avance de nourriture perdue qui
+  ;; vide la colonie. A reexaminer a l'iteration 4 (groupes, departs simultanes).
   let plafond-sorties 1
   let sorties-en-cours count humains with [
     colonie-origine = origine and
@@ -169,7 +170,8 @@ end
 ;; Prendre la quantite disponible dans la limite de la place restante.
 to collecter
   ;; Decision D4 (DECISIONS_IT1.md) : pas de reservation du stock au depart. Avec un plafond
-  ;; de 1 sortie par colonie elle n'apporte aucun gain mesure ; a reexaminer a l'iteration 4.
+  ;; de 1 sortie par colonie elle n'apporte aucun gain mesure. Elle supprime pourtant les courses
+  ;; perdues : necessaire des que plusieurs humains partent ensemble (iteration 4).
   ;; Relire le stock a l'arrivee : un autre humain a pu collecter avant.
   let place-disponible max (list 0 (capacite-transport - nourriture-perso))
   let quantite min (list ([stock-point] of cible-point) place-disponible)
