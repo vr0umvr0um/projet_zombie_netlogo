@@ -42,7 +42,7 @@ Les fichiers des itérations 3 à 5 sont créés au début de chaque itération.
 **Critères de sortie** :
 1. `setup` puis 720 ticks de `go` sans erreur, sur 20 graines.
 2. `invariants-ok?` est vrai tout au long de la simulation.
-3. Sans zombie, la population reste stable : `proportion-survivants` entre 0,9 et 1,1 à 720 ticks (seuil à ajuster).
+3. Sans zombie, la population reste stable : `proportion-survivants` entre 0,9 et 1,1 à 720 ticks, en moyenne et pour au moins 18 simulations sur 20 (décision D7, `DECISIONS_IT1.md`).
 4. Les points de ravitaillement se régénèrent et ne tombent pas durablement à zéro ; les morts de famine restent inférieures à 5 % des humains.
 5. Au moins une sortie complète est observée par colonie (aller, collecte, retour) sans traverser d'obstacle.
 6. Les deux consommations sont distinguées et documentées : 1 unité par tick de déplacement, `consommation-jour` à la colonie.

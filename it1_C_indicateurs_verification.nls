@@ -28,6 +28,15 @@ to-report seuil-survie-max     ;; proportion-survivants maximale a 720 ticks san
   report 1.1
 end
 
+to-report part-min-dans-intervalle   ;; part minimale de simulations dans l'intervalle de survie (D7)
+  report 0.9
+end
+
+;; Nombre minimal de simulations dans l'intervalle (18 sur 20)
+to-report nb-min-dans-intervalle
+  report ceiling (part-min-dans-intervalle * nb-graines-test)
+end
+
 to-report seuil-famine         ;; part maximale d'humains morts de famine
   report 0.05
 end
@@ -177,9 +186,16 @@ to tester-it1
   print "--- Criteres de sortie ---"
   print (word "1. aucune erreur sur " nb-graines-test " graines : vrai (le test est alle au bout)")
   print (word "2. invariants vrais a chaque tick : " reduce [ [ a b ] -> a and b ] invariants)
-  print (word "3. survie entre " seuil-survie-min " et " seuil-survie-max " : "
-    ((min survies >= seuil-survie-min) and (max survies <= seuil-survie-max))
-    " (min " precision min survies 3 ", max " precision max survies 3 ")")
+  ;; Decision D7 (DECISIONS_IT1.md) : le critere tient compte du hasard. Il faut que la survie
+  ;; moyenne soit dans l'intervalle ET qu'au moins part-min-dans-intervalle des simulations y soient.
+  let dans-intervalle length filter [ s -> s >= seuil-survie-min and s <= seuil-survie-max ] survies
+  let moyenne-survie mean survies
+  let critere-3? (dans-intervalle >= nb-min-dans-intervalle)
+    and (moyenne-survie >= seuil-survie-min) and (moyenne-survie <= seuil-survie-max)
+  print (word "3. survie dans [" seuil-survie-min " ; " seuil-survie-max "] pour au moins "
+    nb-min-dans-intervalle " simulations sur " nb-graines-test " et en moyenne : " critere-3?
+    " (" dans-intervalle " sur " nb-graines-test " dans l'intervalle, moyenne " precision moyenne-survie 3
+    ", min " precision min survies 3 ", max " precision max survies 3 ")")
   print (word "4. famine < " seuil-famine " et points epuises < " seuil-points-vides " des ticks : "
     ((max famines < seuil-famine) and (max sans-point < seuil-points-vides))
     " (famine max " precision max famines 3 ", sans point max " precision max sans-point 3 ")")
