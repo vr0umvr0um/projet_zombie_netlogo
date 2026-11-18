@@ -93,7 +93,32 @@ Au plafond de 1, la réservation ne change rien (0,99 → 1,0 à consommation 0,
 
 Aujourd'hui chaque humain non nourri meurt le jour même, donc quand le stock d'une colonie tombe à zéro, tous ses habitants meurent d'un coup (19 morts le même jour dans une simulation avec les anciens réglages). C'est cohérent avec un stock partagé et sans état de « faim » à gérer. Avec D1 et D2, la famine moyenne est de 2 %. Ajouter un délai de grâce demanderait une variable de plus dans `humains-own` ; à n'envisager que si le critère 4 résiste après D1 et D2.
 
-Certitude : décision de modélisation, non testée ; à valider avec Soumia (partie A).
+**Comparaison de trois règles (ajoutée après la décision).** Règle actuelle (mort immédiate des humains non nourris), délai de grâce (mort après 1, 2 ou 3 jours consécutifs sans nourriture, un compteur par humain) et famine probabiliste (un humain non nourri meurt avec une probabilité de 0,5 par jour). Réglages D1 à D7, `nb-zombies = 0`, plafond 1, 60 simulations par case pour les règles sans paramètre (regroupées), 20 pour chaque durée de grâce. Les cases « consommation 0,5 » servent de test de robustesse : les ressources y sont tendues.
+
+| Règle | Survie moy. | Survie min. | Dans [0,9 ; 1,1] | Famine ≥ 5 % | Morts de famine max. en un jour |
+|---|---|---|---|---|---|
+| *Consommation 0,25 (réglage par défaut)* | | | | | |
+| Immédiate (actuelle) | 0,991 | 0,72 | 57 / 60 | 4 / 60 | 0,7 |
+| Grâce 1 jour | 0,991 | 0,70 | 19 / 20 | 1 / 20 | 0,8 |
+| Grâce 2 jours | 0,989 | 0,74 | 19 / 20 | 1 / 20 | 0,9 |
+| Grâce 3 jours | 0,998 | 0,95 | 20 / 20 | 1 / 20 | 0,0 |
+| Probabiliste 0,5 par jour | 0,984 | 0,71 | 55 / 60 | 7 / 60 | 0,9 |
+| *Consommation 0,5 (test de robustesse)* | | | | | |
+| Immédiate (actuelle) | 0,883 | 0,38 | 38 / 60 | 30 / 60 | 5,9 |
+| Grâce 1 jour | 0,930 | 0,73 | 15 / 20 | 10 / 20 | 2,9 |
+| Grâce 2 jours | 0,920 | 0,74 | 16 / 20 | 13 / 20 | 2,4 |
+| Grâce 3 jours | 0,939 | 0,74 | 17 / 20 | 9 / 20 | 2,4 |
+| Probabiliste 0,5 par jour | 0,880 | 0,64 | 34 / 60 | 39 / 60 | 4,6 |
+
+Lecture :
+- **La famine probabiliste n'apporte rien** (survie équivalente ou légèrement pire, plus d'aléa).
+- **Le délai de grâce de 3 jours est la meilleure des trois règles.** Au réglage par défaut, l'écart reste dans le bruit (0,998 contre 0,991). Sous tension il réduit surtout les catastrophes : survie minimale 0,38 → 0,74, famine moyenne 12 % → 7 %, et les morts en masse d'un seul jour passent de 5,9 à 2,4. Plus la grâce est longue, plus le résultat est bon dans ces tests, avec 20 simulations par durée : l'effet est cohérent mais pas démontré statistiquement.
+- **Il ne règle pas le critère 4** : au réglage par défaut, la proportion de simulations à plus de 5 % de famine ne change pas (1 sur 20 contre 4 sur 60). Il retarde la mort sans ajouter de nourriture ; la cause du critère 4 est ailleurs (D9).
+- **Coût** : une variable de plus dans `humains-own` (`jours-sans-nourriture`) et une dizaine de lignes dans `evenements-journaliers` (partie A), avec un réglage de plus (`grace-jours`) à documenter.
+
+Recommandation : **remplacer la règle actuelle par le délai de grâce de 3 jours si l'équipe veut une famine moins brutale** ; sinon, garder la règle actuelle, qui est suffisante au réglage par défaut. Dans les deux cas, ne pas retenir la famine probabiliste. Je n'ai pas modifié le code : la décision validée est « inchangée », et le changement touche la partie A de Soumia.
+
+Certitude : décision de modélisation, comparaison par simulation (20 à 60 simulations par case) ; à valider avec Soumia (partie A).
 
 ### D6. Ne pas figer les naissances avant d'avoir appliqué D1 et D2
 
@@ -115,6 +140,20 @@ Je recommande la première, avec une mention dans le rapport, et un examen de la
 
 **Mesure faite à l'application** : `tester-it1` complet (20 simulations de 720 ticks, en séquence, une seule machine) dure 180 secondes, soit environ **9 secondes par simulation**. Mon estimation initiale (plus de 20 secondes) était trop pessimiste : elle venait de balayages interrompus. À ce rythme, 240 simulations prennent environ 36 minutes en séquence, et moins avec `--threads` en parallèle. Cause probable, non mesurée : chaque humain d'une colonie recalcule un plus court chemin sur toute la carte à chaque tick quand le stock est sous `s-min`, même si aucune sortie n'est possible. Piste : ne décider qu'une fois par colonie et par tick. Priorité basse tant que les expériences de l'itération 5 ne sont pas lancées, mais 240 simulations de plus seront lentes.
 
+### D9 (proposée, non appliquée). Relever `stock-initial-point`
+
+Le critère 4 échoue à cause de colonies isolées (graine 8, voir plus bas). Une colonie dont les points sont loin ne peut partir que si un point contient plus de 2 × la longueur du trajet (D2). Avec `stock-initial-point = 50`, une colonie dont les points sont à plus de 25 pas ne peut jamais partir et s'éteint. Les stocks des points plafonnent à cette même valeur : ils ne se « rechargent » pas au-delà.
+
+Test : réglages D1 à D7, `nb-zombies = 0`, plafond 1, 30 simulations par valeur :
+
+| `stock-initial-point` | Survie moy. | Survie min. | Dans [0,9 ; 1,1] | Famine ≥ 5 % | Famine max. | Colonies sans sortie complète |
+|---|---|---|---|---|---|---|
+| 50 (actuel) | 0,974 | 0,72 | 27 / 30 | 4 / 30 | 0,28 | 0 |
+| 100 | 1,003 | 0,77 | 29 / 30 | 1 / 30 | 0,24 | 0 |
+| **150** | **1,004** | **0,97** | **30 / 30** | **0 / 30** | **0,03** | 0 |
+
+Proposition : `stock-initial-point = 150`, ce qui règle le critère 4 dans ces 30 simulations. Contreparties : le stock total de nourriture sur la carte triple au départ (16 points × 150 au lieu de × 50), donc la rareté des ressources, qui est le moteur du modèle proie-prédateur, diminue ; la valeur est à discuter avec l'équipe (100 est un compromis, avec 1 simulation sur 30 encore au-dessus de 5 % de famine). Le critère 4 n'a pas été relancé avec `tester-it1` complet pour cette valeur : la mesure vient d'une expérience BehaviorSpace équivalente.
+
 ## Statut d'application
 
 | # | Appliquée dans | Test | Résultat |
@@ -130,7 +169,33 @@ Je recommande la première, avec une mention dans le rapport, et un examen de la
 
 **Bilan de `tester-it1` après D1 à D7** : critères 1, 2 et 3 vrais. **Le critère 4 reste faux** : la famine maximale est de 0,28, à cause d'une seule graine (la 8) ; les 19 autres sont à 0,06 ou moins.
 
-**Pourquoi la graine 8** (diagnostic jour par jour) : une colonie placée à environ 11 patchs du point le plus proche (les trois autres à 4, 8 et 11) épuise son stock vers le jour 9, et ses 25 habitants meurent en deux jours. La décision D2 y contribue probablement : un point n'est accepté que s'il contient plus de 2 × la longueur du trajet, or `stock-initial-point` vaut 50, donc une colonie dont les points sont à plus de 25 pas ne peut plus jamais partir. Hypothèse non testée : relever `stock-initial-point`. Elle n'a pas été appliquée, car elle ne fait pas partie des décisions validées.
+**Pourquoi la graine 8** (diagnostic jour par jour) : une colonie placée à environ 11 patchs du point le plus proche (les trois autres à 4, 8 et 11) épuise son stock vers le jour 9, et ses 25 habitants meurent en deux jours. La décision D2 y contribue probablement : un point n'est accepté que s'il contient plus de 2 × la longueur du trajet, or `stock-initial-point` vaut 50, donc une colonie dont les points sont à plus de 25 pas ne peut plus jamais partir. Hypothèse testée ensuite : relever `stock-initial-point` (voir D9). Elle n'est pas appliquée, car elle ne fait pas partie des décisions validées.
+
+## Liste de la séance d'assemblage : résultats
+
+1. **D1 et D2 appliqués, `tester-it1` relancé** : fait (voir le statut ci-dessus). Critères 1, 2 et 3 vrais ; critère 4 faux à cause d'une graine (D9 le corrige dans une expérience équivalente).
+2. **`it1-reglage-taux-naissance` du dépôt** (90 simulations, 10 par case) : `seuil-naissance = 80` et `taux-naissance = 0,01` donnent une survie de 1,00 (1,00 à 1,03), 10 simulations sur 10 dans l'intervalle, famine de 0,1 %, 0,5 naissance en moyenne. `seuil-naissance = 80` avec `taux-naissance = 0,05` convient aussi (10 sur 10, 4 naissances) ; à 0,1 la population dépasse trop souvent 1,1. Le réglage retenu est confirmé.
+3. **D7 validé** (critère 3 reformulé) ; **D5 comparé** : voir la section D5.
+4. **Critères 5 et 6 vérifiés à la main** :
+   - *Critère 5* : sur 16 simulations (réglage par défaut, 30 obstacles), toutes les colonies ont accompli au moins une sortie complète (moyenne de colonies sans sortie complète : 0), avec environ 24 sorties complètes par simulation ; l'invariant « aucun humain sur un obstacle » est vrai à chaque tick sur 20 graines, et les trajets sont calculés en excluant les obstacles. **Rempli.**
+   - *Critère 6* : la consommation quotidienne à la colonie et la consommation de 1 unité par tick en déplacement étaient seulement évoquées par un commentaire. Elles sont maintenant distinguées et documentées dans `evenements-journaliers` (partie A) et `aller-vers-point` (partie B). **Rempli.**
+5. **`tester-it2` relancé** (les humains survivent maintenant) : critère 1 (attaques isolées) et critère 2 (issue de l'infection) vrais, fréquences conformes (0,339 pour 0,35 attendu ; 0,304 pour 0,3) ; critère 3 (invariants sur 20 graines, aucune infection sans zombie) vrai ; critère 4 (aucune erreur) vrai ; critère 5 (courbes) reste à faire avec `it2-courbes`.
+
+### Constat pour l'itération 2 : les zombies disparaissent
+
+Dans les 20 simulations de `tester-it2` (20 zombies, sans obstacle), **tous les zombies sont éliminés avant 720 ticks** : zombies détruits (26 à 67) supérieurs aux transformations (6 à 47), 0 zombie à la fin dans 20 cas sur 20. Il n'y a donc pas de dynamique proie-prédateur.
+
+Explication par un calcul simple : un zombie attaque jusqu'à ce qu'un humain réussisse sa défense, soit en moyenne 1 / `proba-defense` attaques ; chacune infecte avec la probabilité (1 − `proba-defense`) × `proba-infection` ; un infecté se transforme avec la probabilité 1 − `proba-mort-infection`. Le nombre de nouveaux zombies par zombie est donc R ≈ ((1 − pd) × pi / pd) × (1 − pm). Avec pd = 0,3, pi = 0,5 et pm = 0,3 : **R ≈ 0,82, inférieur à 1**, d'où l'extinction.
+
+Vérification (12 simulations par valeur) :
+
+| `proba-defense` | R calculé | Simulations où des zombies survivent | Humains à la fin (moy.) |
+|---|---|---|---|
+| 0,1 | 3,15 | 9 / 12 | 8,8 |
+| 0,2 | 1,40 | 0 / 12 | 42,2 |
+| 0,3 (actuel) | 0,82 | 1 / 12 | 69,3 |
+
+Aux extrêmes, la prédiction tient : extinction à R < 1, persistance et quasi-disparition des humains à R > 3. À 0,2, R est supérieur à 1 mais les zombies disparaissent quand même sur 30 jours : le calcul est une approximation (il ignore la durée de vie des zombies et les rencontres dans l'espace) et R > 1 ne suffit pas. **À décider pour l'itération 2** : `proba-defense` (aujourd'hui 0,3) fixe le régime du modèle ; l'effet de groupe de l'itération 4 repose justement sur cette probabilité.
 
 ## Récapitulatif
 
@@ -143,7 +208,8 @@ Je recommande la première, avec une mention dans le rapport, et un examen de la
 | D5 | Famine inchangée | A | décision de modélisation |
 | D6 | Naissances : expérience avant décision | A et C | à faire |
 | D7 | Critère 3 reformulé | C | choix de méthode |
-| D8 | Temps de calcul : à surveiller | B | hypothèse |
+| D8 | Temps de calcul : à surveiller | B | mesuré (environ 9 s par simulation) |
+| D9 | `stock-initial-point` à 150 (proposée) | tous | bonne (30 simulations), à valider |
 
 ## À faire pendant la séance d'assemblage
 
