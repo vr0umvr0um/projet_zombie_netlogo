@@ -163,6 +163,8 @@ end
 
 ;; Prendre la quantite disponible dans la limite de la place restante.
 to collecter
+  ;; Decision D4 (DECISIONS_IT1.md) : pas de reservation du stock au depart. Avec un plafond
+  ;; de 1 sortie par colonie elle n'apporte aucun gain mesure ; a reexaminer a l'iteration 4.
   ;; Relire le stock a l'arrivee : un autre humain a pu collecter avant.
   let place-disponible max (list 0 (capacite-transport - nourriture-perso))
   let quantite min (list ([stock-point] of cible-point) place-disponible)
