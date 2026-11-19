@@ -70,6 +70,7 @@ def resume(donnees):
             "jour": jour,
             "humains (moyenne)": round(instant["humains"].mean(), 1),
             "zombies (moyenne)": round(instant["zombies"].mean(), 1),
+            "simulations avec humains": f"{int((instant['humains'] > 0).sum())} / {len(instant)}",
             "simulations avec zombies": f"{int((instant['zombies'] > 0).sum())} / {len(instant)}",
         })
     return pd.DataFrame(lignes)
