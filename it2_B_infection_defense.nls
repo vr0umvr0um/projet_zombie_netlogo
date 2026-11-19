@@ -57,5 +57,6 @@ to transformer
     initialiser-zombie
   ]
   set nb-transformations nb-transformations + 1
+  liberer-reservation   ;; it1_B : rend le stock reserve si l'humain etait en route
   die
 end

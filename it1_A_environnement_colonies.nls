@@ -153,6 +153,8 @@ to actualiser-affichage-colonies
 end
 
 to mourir [ cause ]
+  liberer-reservation   ;; it1_B : un humain mort en route rend le stock qu'il avait reserve
+
   if cause = "infection" [
     set nb-morts-infection nb-morts-infection + 1
   ]

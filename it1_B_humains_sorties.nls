@@ -22,8 +22,25 @@ globals [
 
 ;; Quantite que l'humain pourra collecter sur ce point : le stock, dans la limite de la place
 ;; dans son sac a l'arrivee (capacite-transport - 1, car il arrive avec 1 unite).
+;; Seul le stock non reserve par d'autres humains compte (reservation du stock, voir collecter).
 to-report quantite-collectable [ point ]
-  report min (list ([ stock-point ] of point) (capacite-transport - 1))
+  report min (list ([ stock-point - stock-reserve ] of point) (capacite-transport - 1))
+end
+
+;; RESERVATION DU STOCK. Au depart, l'humain reserve sur son point la quantite qu'il pourra
+;; collecter (quantite-collectable) ; personne d'autre ne peut la prendre. A l'arrivee, il prend
+;; sa reservation, plus ce qui n'est reserve par personne (regeneration), dans la limite de la
+;; place dans son sac. La quantite collectee est donc toujours >= la reservation > 2n : chaque
+;; sortie terminee rapporte plus qu'elle ne consomme, meme si d'autres humains visent le meme
+;; point. S'il meurt ou se transforme en route, sa reservation est rendue (liberer-reservation).
+to liberer-reservation
+  if reservation > 0 and cible-point != nobody [
+    let r reservation
+    ask cible-point [ set stock-reserve stock-reserve - r ]
+    set reservation 0
+    ;; le stock libre augmente : le cache de decider-sortie n'est plus a jour pour ce tick
+    set tick-cases-sans-trajet -1
+  ]
 end
 
 ;; Vrai si une sortie de nb-pas pas vers ce point rapporte plus qu'elle ne consomme.
@@ -77,6 +94,7 @@ to initialiser-humain [ maison ]
   set cible-point nobody
   set chemin-aller []
   set groupe-id -1
+  set reservation 0
   set shape "person"
   set color sky
   set size 1
@@ -115,8 +133,9 @@ to decider-sortie
   ;; Cache des cases sans trajet rentable pour le tick en cours. Tant qu'aucun point n'est
   ;; rentable, chaque humain present refaisait le meme parcours en largeur a chaque tick. Le
   ;; resultat ne depend que de la case de depart et des stocks des points ; pendant la phase des
-  ;; humains, ces stocks ne font que baisser (collecter) : une case sans trajet le reste jusqu'au
-  ;; tick suivant. Le cache ne change donc aucun resultat, il evite seulement des calculs.
+  ;; humains, le stock libre (stock - reservations) ne fait que baisser (reservations, collecte) :
+  ;; une case sans trajet le reste jusqu'au tick suivant. Seule exception, une reservation rendue
+  ;; (liberer-reservation), qui vide le cache. Le cache ne change donc aucun resultat.
   if tick-cases-sans-trajet != ticks or not is-patch-set? cases-sans-trajet [
     set cases-sans-trajet no-patches
     set tick-cases-sans-trajet ticks
@@ -139,6 +158,12 @@ to decider-sortie
   ask origine [
     set stock-colonie stock-colonie - ration-depart
   ]
+
+  ;; Reserver sur le point la quantite qui rend la sortie rentable (voir liberer-reservation).
+  let point last trajet
+  let quantite-reservee quantite-collectable point
+  ask point [ set stock-reserve stock-reserve + quantite-reservee ]
+  set reservation quantite-reservee
 
   set nourriture-perso ration-depart
   set chemin-aller trajet
@@ -220,16 +245,18 @@ end
 
 ;; Prendre la quantite disponible dans la limite de la place restante.
 to collecter
-  ;; Pas de reservation du stock au depart. Avec un plafond
-  ;; de 1 sortie par colonie elle n'apporte aucun gain mesure. Elle supprime pourtant les courses
-  ;; perdues : necessaire des que plusieurs humains partent ensemble (iteration 4).
-  ;; Relire le stock a l'arrivee : un autre humain a pu collecter avant.
+  ;; Reservation du stock (voir liberer-reservation) : l'humain peut prendre tout le stock sauf
+  ;; ce que les autres humains ont reserve, donc au moins sa propre reservation.
   let place-disponible max (list 0 (capacite-transport - nourriture-perso))
-  let quantite min (list ([stock-point] of cible-point) place-disponible)
+  let reserve-des-autres [ stock-reserve ] of cible-point - reservation
+  let quantite min (list ([ stock-point ] of cible-point - reserve-des-autres) place-disponible)
+  let ma-reservation reservation
 
   ask cible-point [
     set stock-point stock-point - quantite
+    set stock-reserve stock-reserve - ma-reservation
   ]
+  set reservation 0
 
   set nourriture-perso nourriture-perso + quantite
   set mission "retour"

@@ -55,6 +55,7 @@ patches-own [
   type-patch               ;; "vide", "obstacle" ou "ravitaillement"
   stock-point              ;; nourriture disponible (points de ravitaillement)
   stock-max-point          ;; stock de depart, borne de la regeneration lente
+  stock-reserve            ;; part du stock reservee par les humains en route vers ce point (it1_B)
 ]
 
 colonies-own [
@@ -71,6 +72,7 @@ humains-own [
   cible-point              ;; patch de ravitaillement vise
   chemin-aller             ;; liste des patches parcourus, rejoue a l'envers au retour
   groupe-id                ;; -1 = seul ; sinon identifiant du groupe (strategies de groupe)
+  reservation              ;; quantite reservee sur cible-point pendant l'aller (it1_B), 0 sinon
 ]
 
 zombies-own [

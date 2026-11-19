@@ -145,6 +145,26 @@ to-report liste-invariants-violes
   if nb-zombies-initial = 0 and nb-nouvelles-infections > 0
     [ set violes lput "infection sans source" violes ]
 
+  ;; reservation du stock (it1_B) : la part reservee d'un point est entre 0 et son stock, et egale
+  ;; a la somme des reservations des humains en route vers lui ; seul un humain a l'aller reserve.
+  ;; foreach sort et of sur un seul agent : aucun tirage aleatoire, les resultats ne changent pas.
+  if any? patches with [ stock-reserve < 0 or stock-reserve > stock-point ]
+    [ set violes lput "reservation hors du stock" violes ]
+  if any? humains with [ reservation < 0 or (reservation > 0 and mission != "aller") ]
+    [ set violes lput "reservation d'un humain qui n'est pas a l'aller" violes ]
+  let reservations-coherentes? true
+  foreach sort patches with [ type-patch = "ravitaillement" ] [ p ->
+    let total 0
+    foreach sort humains with [ cible-point = p and mission = "aller" ] [ h -> set total total + [ reservation ] of h ]
+    if total != [ stock-reserve ] of p [ set reservations-coherentes? false ]
+  ]
+  if not reservations-coherentes?
+    [ set violes lput "reservations incoherentes" violes ]
+
+  ;; chaque sortie terminee rapporte plus qu'elle ne consomme (bilan en tete de it1_B)
+  if nb-sorties-deficitaires > 0
+    [ set violes lput "sortie deficitaire" violes ]
+
   report violes
 end
 
