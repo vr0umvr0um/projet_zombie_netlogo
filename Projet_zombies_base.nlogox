@@ -101,6 +101,7 @@ to setup
 
   set nb-humains-initial count humains
   set nb-zombies-initial count zombies
+  actualiser-affichage-colonies
   reset-ticks
 end
 
@@ -116,6 +117,7 @@ to go
   ask humains [ humain-agir ]
   ask zombies [ zombie-agir ]
   if (ticks mod ticks-par-jour) = 0 [ evenements-journaliers ]
+  actualiser-affichage-colonies   ;; affichage seulement (it1_A)
 
   tick
 end
@@ -210,6 +212,13 @@ Quelle strategie de ravitaillement (individuelle, groupe fixe, groupe adaptatif)
 - Agents : humains, zombies, colonies. Patches : points de ravitaillement, obstacles.
 - Proie-predateur : nourriture = herbe, humains = proies, zombies = predateurs.
 - 1 tick = 1 heure. 1 patch = distance parcourue par un humain en 1 tick.
+
+## Lecture de la carte
+
+- Maison : colonie. Etiquette : nombre d'humains de la colonie (presents et en sortie), infectes entre parentheses, puis stock. Bleu quand le stock atteint s-min, bleu fonce en dessous, noir a zero, gris sans habitant.
+- Les humains presents a la colonie sont caches (ils sont comptes dans l'etiquette) ; seuls les humains en sortie sont visibles : bleu ciel (sains), orange (infectes).
+- Zombies : violet, meme taille que les humains.
+- Patches : vert (ravitaillement, plus sombre quand le stock baisse, noir vide), gris (obstacle).
 
 ## Parametres (valeurs provisoires, a fixer par essais)
 

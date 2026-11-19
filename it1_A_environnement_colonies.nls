@@ -68,8 +68,10 @@ to regenerer-points
       set stock-point stock-max-point
     ]
 
+    ;; Borne haute a 2 x le stock maximal : scale-color donne du blanc a la borne haute, un point
+    ;; plein restait donc blanc. Ici, plein = vert franc, vide = noir.
     ifelse stock-max-point > 0 [
-      set pcolor scale-color green stock-point 0 stock-max-point
+      set pcolor scale-color green stock-point 0 (2 * stock-max-point)
     ] [
       set pcolor black
     ]
@@ -116,17 +118,7 @@ to reproduire
       if stock-colonie > seuil-naissance [
         if random-float 1 < taux-naissance [
           hatch-humains 1 [
-            set colonie-origine maison
-            set etat "sain"
-            set date-infection -1
-            set nourriture-perso 0
-            set mission "colonie"
-            set cible-point nobody
-            set chemin-aller []
-            set groupe-id -1
-            set shape "person"
-            set color blue
-            set size 1
+            initialiser-humain maison   ;; it1_B
           ]
 
           set nb-naissances nb-naissances + 1
@@ -136,6 +128,29 @@ to reproduire
   ]
 end
 
+
+;; Etiquette et couleur des colonies, appelee a la fin de setup et de chaque tick (fichier principal).
+;; Les humains presents a la colonie sont caches (it1_B, initialiser-humain) : l'etiquette donne
+;; leur nombre total (presents et en sortie), les infectes et le stock. La couleur suit le stock :
+;; bleu si le stock atteint s-min, bleu fonce en dessous (sorties en cours), noir a zero (famine),
+;; gris sans habitant.
+;; foreach sort et ask sur un seul agent : pas de tirage aleatoire, les resultats ne changent pas.
+to actualiser-affichage-colonies
+  foreach sort colonies [ c ->
+    ask c [
+      let habitants humains with [ colonie-origine = myself ]
+      let infectes count habitants with [ etat = "infecte" ]
+      set label (word count habitants " h"
+                      ifelse-value (infectes > 0) [ (word " (" infectes " inf.)") ] [ "" ]
+                      " / " round stock-colonie)
+      set color (ifelse-value
+        not any? habitants   [ gray ]
+        stock-colonie >= s-min [ blue ]
+        stock-colonie > 0      [ blue - 3 ]
+                               [ black ])
+    ]
+  ]
+end
 
 to mourir [ cause ]
   if cause = "infection" [

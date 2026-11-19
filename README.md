@@ -30,6 +30,8 @@ Ce README explique comment utiliser le dépôt. Le raisonnement scientifique (qu
 3. Le curseur `delai-tick` règle la vitesse : pause en secondes après chaque tick (0,05 par défaut, soit environ 40 secondes pour les 30 jours ; 0 pour la vitesse maximale). Le curseur de vitesse de NetLogo, en haut de la fenêtre, agit aussi sur l'affichage. Le moniteur « Temps simulé » indique le jour et l'heure.
 4. Les autres curseurs règlent les paramètres ; le sélecteur `strategie` est prévu pour l'itération 4.
 
+Lecture de la carte : les humains présents à la colonie sont cachés et comptés dans l'étiquette de la maison (« 25 h (2 inf.) / 72 » : habitants, infectés, stock) ; seuls les humains en sortie sont visibles (bleu ciel, orange s'ils sont infectés). Les zombies sont violets, de la même taille que les humains. La maison est bleue si son stock atteint `s-min`, bleu foncé en dessous, noire à zéro et grise sans habitant ; un point de ravitaillement passe du vert (plein) au noir (vide).
+
 Réglages par défaut retenus :
 
 | Paramètre | Valeur | Paramètre | Valeur |

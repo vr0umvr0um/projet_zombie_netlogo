@@ -23,14 +23,7 @@ to setup-humains
 
     ask colonie-actuelle [
       hatch-humains effectif [
-        set colonie-origine colonie-actuelle
-        set etat "sain"
-        set mission "colonie"
-        set groupe-id -1
-        set nourriture-perso 0
-        set chemin-aller []
-        set cible-point nobody
-        set shape "person"
+        initialiser-humain colonie-actuelle
 
         ;; Placer l'humain sur une case vide voisine si possible.
         let cases-libres neighbors4 with [ type-patch = "vide" ]
@@ -40,6 +33,28 @@ to setup-humains
       ]
     ]
   ]
+end
+
+;; Variables d'un humain qui nait dans la colonie maison (setup-humains et reproduire, it1_A).
+;; Un humain cree par hatch copie les variables de la colonie (taille 2, couleur, etiquette) :
+;; elles sont toutes redefinies ici.
+;; Affichage : un humain present a la colonie est cache, l'etiquette de la colonie donne
+;; l'effectif (actualiser-affichage-colonies, it1_A). Seuls les humains en sortie sont visibles :
+;; la carte correspond ainsi exactement aux effectifs, meme a 25 humains par colonie.
+to initialiser-humain [ maison ]
+  set colonie-origine maison
+  set etat "sain"
+  set date-infection -1
+  set nourriture-perso 0
+  set mission "colonie"
+  set cible-point nobody
+  set chemin-aller []
+  set groupe-id -1
+  set shape "person"
+  set color sky
+  set size 1
+  set label ""
+  set hidden? true
 end
 
 ;; Executer une seule action par tick selon la mission.
@@ -95,6 +110,7 @@ to decider-sortie
   set chemin-aller trajet
   set cible-point last trajet
   set mission "aller"
+  set hidden? false   ;; visible pendant la sortie
 end
 
 ;; Renvoyer le point au bout du trajet, ou nobody si aucun trajet n'existe.
@@ -212,5 +228,6 @@ to rentrer-a-la-colonie
     set chemin-aller []
     set cible-point nobody
     set mission "colonie"
+    set hidden? true    ;; de retour : compte dans l'etiquette de la colonie
   ]
 end

@@ -19,10 +19,15 @@ to setup-zombies
 end
 
 ;; Parametres communs a un zombie, utilises par setup-zombies et transformer
+;; Un zombie issu d'un humain (transformer, hatch) copie ses variables : un humain present a la
+;; colonie est cache, d'ou hidden? false. Meme taille que les humains, seule la couleur change.
 to initialiser-zombie
   set age-zombie 0
   set shape "person"
   set color violet
+  set size 1
+  set label ""
+  set hidden? false
 end
 
 to zombie-agir

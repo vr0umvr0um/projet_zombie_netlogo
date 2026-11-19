@@ -119,6 +119,8 @@ Indépendante du code, à avancer dès l'itération 1 par la personne la plus li
 
 - `mourir [ cause ]` : "infection", "attaque" ou "famine" ; incrémente le compteur et retire l'agent (fichier A de l'itération 1).
 - `detecter-et-defendre` : procédure d'humain, appelée par le zombie qui attaque, jamais par `humain-agir`.
+- `initialiser-humain [ maison ]` : variables d'un nouvel humain (fichier B de l'itération 1), utilisée par `setup-humains` et `reproduire`.
+- `actualiser-affichage-colonies` : étiquette et couleur des colonies, affichage seulement (fichier A de l'itération 1).
 - `infecter`, `transformer` : procédures d'humain (itération 2).
 - `choisir-point` : renvoie un patch de ravitaillement avec un stock > 0, ou `nobody`.
 - `invariants-ok?` : booléen ; il doit rester valide à chaque itération.
