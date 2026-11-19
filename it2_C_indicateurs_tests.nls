@@ -67,8 +67,14 @@ to preparer-test
   ask turtles [ die ]
 end
 
-;; Une attaque isolee : un humain sain et un zombie sur le meme patch.
-;; Renvoie "defense" (zombie detruit), "infecte" ou "indemne".
+;; Age du zombie au moment de l'attaque isolee : permet de verifier zombie-se-nourrir.
+to-report age-test-zombie
+  report 100
+end
+
+;; Une attaque isolee : un humain sain et un zombie (age age-test-zombie) sur le meme patch.
+;; Renvoie [ issue  age-du-zombie-apres ] ; issue = "defense" (zombie detruit), "tue" (humain
+;; tue par le zombie), "infecte" ou "indemne" ; age -1 si le zombie a ete detruit.
 to-report resultat-attaque
   let h nobody
   let z nobody
@@ -80,39 +86,54 @@ to-report resultat-attaque
   ]
   create-zombies 1 [
     initialiser-zombie
+    set age-zombie age-test-zombie
     move-to patch 0 0
     set z self
   ]
   let numero-zombie [ who ] of z
+  let numero-humain [ who ] of h
   ask z [ zombie-attaquer ]
 
   ;; un agent mort ne peut plus servir d'argument : on le retrouve par son numero
   let res "indemne"
-  ifelse not any? zombies with [ who = numero-zombie ]
-    [ set res "defense" ]
-    [ if [ etat ] of h = "infecte" [ set res "infecte" ] ]
+  let age-apres -1
+  ifelse not any? zombies with [ who = numero-zombie ] [
+    set res "defense"
+  ] [
+    set age-apres [ age-zombie ] of one-of zombies with [ who = numero-zombie ]
+    ifelse not any? humains with [ who = numero-humain ]
+      [ set res "tue" ]
+      [ if [ etat ] of h = "infecte" [ set res "infecte" ] ]
+  ]
 
   ask humains [ die ]
   ask zombies [ die ]
-  report res
+  report (list res age-apres)
 end
 
-;; Frequences [ defense infecte indemne ] sur n attaques, avec les probabilites donnees.
-;; Les curseurs proba-defense et proba-infection sont restaures ensuite.
-to-report frequences-attaque [ n p-defense p-infection ]
+;; Frequences [ defense infecte indemne tue ] sur n attaques, avec les probabilites donnees,
+;; puis la liste des ages des zombies apres les attaques ou l'humain a ete tue.
+;; Les curseurs proba-defense, proba-mort-attaque et proba-infection sont restaures ensuite.
+to-report frequences-attaque [ n p-defense p-mort p-infection ]
   let ancienne-defense proba-defense
+  let ancienne-mort proba-mort-attaque
   let ancienne-infection proba-infection
   set proba-defense p-defense
+  set proba-mort-attaque p-mort
   set proba-infection p-infection
 
   let res n-values n [ resultat-attaque ]
 
   set proba-defense ancienne-defense
+  set proba-mort-attaque ancienne-mort
   set proba-infection ancienne-infection
-  let nb-defenses length filter [ r -> r = "defense" ] res
-  let nb-infectes-attaque length filter [ r -> r = "infecte" ] res
-  let nb-indemnes length filter [ r -> r = "indemne" ] res
-  report (list (nb-defenses / n) (nb-infectes-attaque / n) (nb-indemnes / n))
+  let issues map [ r -> item 0 r ] res
+  let nb-defenses length filter [ r -> r = "defense" ] issues
+  let nb-infectes-attaque length filter [ r -> r = "infecte" ] issues
+  let nb-indemnes length filter [ r -> r = "indemne" ] issues
+  let nb-tues length filter [ r -> r = "tue" ] issues
+  let ages-apres-repas map [ r -> item 1 r ] filter [ r -> item 0 r = "tue" ] res
+  report (list (nb-defenses / n) (nb-infectes-attaque / n) (nb-indemnes / n) (nb-tues / n) ages-apres-repas)
 end
 
 ;; n humains infectes depuis delai-transformation ticks (avant = 0 tick) : issue de l'infection.
@@ -139,7 +160,7 @@ end
 
 ;; Une simulation complete avec nb-z zombies (nb-obstacles = 0), pour une graine donnee.
 ;; Renvoie : [ graine  invariants-ok  pic-zombies  tick-du-pic  humains-fin  zombies-fin
-;;             infections  transformations  morts-infection  zombies-detruits ]
+;;             infections  transformations  morts-infection  zombies-detruits  morts-attaque ]
 ;; ATTENTION : appelle setup, donc efface la simulation en cours.
 to-report evaluer-it2 [ graine nb-z ]
   let anciens-zombies nb-zombies
@@ -164,7 +185,7 @@ to-report evaluer-it2 [ graine nb-z ]
   set nb-zombies anciens-zombies
   set nb-obstacles anciens-obstacles
   report (list graine invariants-toujours-ok? pic tick-pic count humains count zombies
-               nb-nouvelles-infections nb-transformations nb-morts-infection nb-zombies-detruits)
+               nb-nouvelles-infections nb-transformations nb-morts-infection nb-zombies-detruits nb-morts-attaque)
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -179,20 +200,30 @@ end
 ;; Criteres 1 et 2 : attaques isolees et issue de l'infection.
 to afficher-scenarios-it2
   let n nb-essais-attaque
+  let tol tolerance-frequence
 
-  ;; --- critere 1 : scenarios d'attaque ---
+  ;; --- critere 1 : scenarios d'attaque, probabilites [ defense mort infection ] ---
+  ;; frequences-attaque renvoie [ defense infecte indemne tue ages-apres-repas ]
   preparer-test
-  let f-sans-infection frequences-attaque n 0 0
-  let f-defense-sure frequences-attaque n 1 1
-  let f-infection-sure frequences-attaque n 0 1
-  let f-mixte frequences-attaque n 0.3 0.5
+  let f-sans-effet frequences-attaque n 0 0 0
+  let f-defense-sure frequences-attaque n 1 1 1
+  let f-infection-sure frequences-attaque n 0 0 1
+  let f-mort-sure frequences-attaque n 0 1 1
+  let f-mixte frequences-attaque n 0.3 0.2 0.5
+  let age-attendu max (list 0 (age-test-zombie - gain-attaque-zombie))
+  let ages-repas remove-duplicates item 4 f-mort-sure
   print "--- Critere 1 : attaques isolees ---"
-  print (word "proba-infection = 0     -> infectes : " item 1 f-sans-infection " (attendu 0) : " (item 1 f-sans-infection = 0))
-  print (word "proba-defense = 1       -> defenses : " item 0 f-defense-sure " (attendu 1), infectes " item 1 f-defense-sure " : "
-    (item 0 f-defense-sure = 1 and item 1 f-defense-sure = 0))
-  print (word "defense 0, infection 1  -> infectes : " item 1 f-infection-sure " (attendu 1) : " (item 1 f-infection-sure = 1))
-  print (word "defense 0.3, infection 0.5 -> infectes " precision item 1 f-mixte 3 " (attendu 0.35 +/- " tolerance-frequence ") : "
-    (abs (item 1 f-mixte - 0.35) <= tolerance-frequence))
+  print (word "defense 0, mort 0, infection 0 -> indemnes : " item 2 f-sans-effet " (attendu 1) : " (item 2 f-sans-effet = 1))
+  print (word "defense 1                      -> defenses : " item 0 f-defense-sure " (attendu 1), tues " item 3 f-defense-sure
+    ", infectes " item 1 f-defense-sure " : " (item 0 f-defense-sure = 1 and item 3 f-defense-sure = 0 and item 1 f-defense-sure = 0))
+  print (word "defense 0, mort 0, infection 1 -> infectes : " item 1 f-infection-sure " (attendu 1) : " (item 1 f-infection-sure = 1))
+  print (word "defense 0, mort 1              -> tues : " item 3 f-mort-sure " (attendu 1) : " (item 3 f-mort-sure = 1))
+  print (word "  le zombie se nourrit : age " age-test-zombie " -> " ages-repas
+    " (attendu " age-attendu ", gain-attaque-zombie " gain-attaque-zombie ") : " (ages-repas = (list age-attendu)))
+  ;; attendu : defense 0,3 ; tues 0,7 x 0,2 = 0,14 ; infectes 0,7 x 0,8 x 0,5 = 0,28
+  print (word "defense 0.3, mort 0.2, infection 0.5 -> defenses " precision item 0 f-mixte 3 " (attendu 0.3), tues "
+    precision item 3 f-mixte 3 " (attendu 0.14), infectes " precision item 1 f-mixte 3 " (attendu 0.28), tolerance " tol " : "
+    (abs (item 0 f-mixte - 0.3) <= tol and abs (item 3 f-mixte - 0.14) <= tol and abs (item 1 f-mixte - 0.28) <= tol))
 
   ;; --- critere 2 : issue de l'infection ---
   preparer-test
@@ -203,22 +234,23 @@ to afficher-scenarios-it2
   print (word "avant le delai : morts " item 0 avant-delai ", transformations " item 1 avant-delai " (attendu 0 et 0) : "
     (item 0 avant-delai = 0 and item 1 avant-delai = 0))
   print (word "apres le delai : tous les infectes ont evolue : " ((item 0 apres-delai + item 1 apres-delai) = n))
-  print (word "part de morts " precision part-morts 3 " (attendu proba-mort-infection " proba-mort-infection " +/- " tolerance-frequence ") : "
-    (abs (part-morts - proba-mort-infection) <= tolerance-frequence))
+  print (word "part de morts " precision part-morts 3 " (attendu proba-mort-infection " proba-mort-infection " +/- " tol ") : "
+    (abs (part-morts - proba-mort-infection) <= tol))
 
   print "--- Criteres 3 a 5 : simulations completes (nb-zombies = 20, nb-obstacles = 0) ---"
-  print "graine | invariants | pic zombies (tick) | humains fin | zombies fin | infections | transformations | morts infection | zombies detruits"
+  print "graine | invariants | pic zombies (tick) | humains fin | zombies fin | infections | transformations | morts infection | zombies detruits | morts attaque"
 end
 
 to afficher-ligne-it2 [ r ]
   print (word item 0 r " | " item 1 r " | " item 2 r " (" item 3 r ") | " item 4 r " | " item 5 r " | " item 6 r
-    " | " item 7 r " | " item 8 r " | " item 9 r)
+    " | " item 7 r " | " item 8 r " | " item 9 r " | " item 10 r)
 end
 
 ;; Criteres 3 a 5, a partir des resultats avec zombies et du resultat sans zombie.
 to afficher-criteres-it2 [ resultats sans-zombie ]
   print (word "3. invariants vrais a chaque tick (" nb-graines-test " graines) : " reduce [ [ a b ] -> a and b ] map [ r -> item 1 r ] resultats)
-  print (word "3. nb-zombies = 0 : infections " item 6 sans-zombie " (attendu 0) : " (item 6 sans-zombie = 0))
+  print (word "3. nb-zombies = 0 : infections " item 6 sans-zombie ", morts par attaque " item 10 sans-zombie
+    " (attendu 0 et 0) : " (item 6 sans-zombie = 0 and item 10 sans-zombie = 0))
   print "4. aucune erreur d'execution : vrai (le test est alle au bout)"
   print "5. courbes : lancer l'experience BehaviorSpace it2-courbes, puis python analyse/courbes_it2.py."
 end
@@ -227,9 +259,10 @@ end
 to annoncer-test-it2
   print "=== Test iteration 2 : humain / zombie ==="
   print "Ce test verifie :"
-  print (word "  1. attaques isolees (" nb-essais-attaque " attaques par cas, un humain et un zombie seuls) : proba-infection = 0 -> aucune infection ;"
-    " proba-defense = 1 -> zombie toujours detruit ; defense 0 et infection 1 -> toujours infecte ;"
-    " defense 0,3 et infection 0,5 -> part d'infectes 0,35 +/- " tolerance-frequence " ;")
+  print (word "  1. attaques isolees (" nb-essais-attaque " attaques par cas, un humain et un zombie seuls) :"
+    " sans defense, mort ni infection -> humain indemne ; defense 1 -> zombie toujours detruit ;"
+    " infection 1 (sans defense ni mort) -> toujours infecte ; mort 1 -> humain toujours tue et le zombie se nourrit"
+    " (son age recule de gain-attaque-zombie) ; defense 0,3, mort 0,2, infection 0,5 -> 0,3 / 0,14 / 0,28 +/- " tolerance-frequence " ;")
   print (word "  2. issue de l'infection (" nb-essais-attaque " infectes) : rien avant delai-transformation ; tous meurent ou se transforment apres ;"
     " part de morts = proba-mort-infection +/- " tolerance-frequence " ;")
   print (word "  3. " nb-graines-test " simulations de 720 ticks (20 zombies, 0 obstacle, graines 1 a " nb-graines-test
@@ -310,7 +343,7 @@ end
 to enregistrer-simulation-it2
   let graine (ifelse-value (test2-graine > nb-graines-test) [ 1 ] [ test2-graine ])
   let r (list graine test2-invariants-ok? test2-pic test2-tick-pic count humains count zombies
-              nb-nouvelles-infections nb-transformations nb-morts-infection nb-zombies-detruits)
+              nb-nouvelles-infections nb-transformations nb-morts-infection nb-zombies-detruits nb-morts-attaque)
   ifelse test2-graine > nb-graines-test [
     set test2-sans-zombie r
   ] [

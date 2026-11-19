@@ -41,6 +41,7 @@ Réglages par défaut retenus :
 | `stock-initial-point` | 150 | `s-min` | 80 |
 | `regeneration-point` | 0,5 | `seuil-naissance` / `taux-naissance` | 80 / 0,01 |
 | `proba-defense` | 0,125 | `proba-infection` | 0,5 |
+| `proba-mort-attaque` | 0,1 | `gain-attaque-zombie` | 48 ticks |
 
 ## Organisation du code
 
@@ -84,5 +85,5 @@ La figure obtenue est `figures/it2_courbes.png`.
 ## Limites connues
 
 - Les données Covid-19 ne sont pas encore intégrées : calibration et validation restent à faire (itération 5).
-- Les courbes de l'itération 2 décroissent sans oscillation : les zombies n'ont pas de reproduction propre, le cadre proie-prédateur décrit ici une extinction progressive.
+- Les courbes de l'itération 2 décroissent sans oscillation. Une attaque peut maintenant tuer l'humain (`proba-mort-attaque`) et nourrir le zombie (`gain-attaque-zombie`), comme dans *Wolf Sheep Predation* ; mais les zombies meurent presque tous par la défense avant leur durée de vie, si bien que ce gain ne change presque rien, et un humain tué ne devient pas zombie. Le cadre proie-prédateur décrit donc toujours une extinction progressive des zombies.
 - Un critère de l'itération 1 est évalué statistiquement (au moins 18 simulations sur 20) : environ 2 % des simulations connaissent une famine plus forte par pure malchance.

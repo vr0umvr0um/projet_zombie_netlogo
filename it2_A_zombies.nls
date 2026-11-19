@@ -65,6 +65,15 @@ to zombie-attaquer
   ask cible [ detecter-et-defendre attaquant ]
 end
 
+;; Predation (appelee par detecter-et-defendre, it2_B, quand l'humain attaque est tue) : comme le
+;; loup de Wolf Sheep Predation qui gagne de l'energie en mangeant, le zombie gagne
+;; gain-attaque-zombie ticks de vie (son age recule, sans descendre sous 0).
+;; Le zombie vit donc plus longtemps quand les proies sont nombreuses : c'est le couplage
+;; proie-predateur qui manquait (avant, la duree de vie ne dependait pas des humains).
+to zombie-se-nourrir
+  set age-zombie max (list 0 (age-zombie - gain-attaque-zombie))
+end
+
 ;; Avance d'un pas si la case devant est franchissable, sinon demi-tour approximatif
 to avancer-zombie
   ifelse case-franchissable? patch-ahead vitesse-zombie

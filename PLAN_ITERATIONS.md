@@ -60,7 +60,7 @@ Les fichiers des itérations 3 à 5 sont créés au début de chaque itération.
 Le code des parties A et B est écrit, assemblé et testé (`tester-it2`).
 
 **Critères de sortie** :
-1. `proba-infection = 0` : aucune infection. `proba-defense = 1` : aucun humain infecté et zombies détruits. `proba-defense = 0` et `proba-infection = 1` : infection à chaque contact.
+1. `proba-infection = 0` : aucune infection. `proba-defense = 1` : aucun humain infecté et zombies détruits. `proba-defense = 0` et `proba-infection = 1` : infection à chaque contact. Prédation : `proba-mort-attaque = 1` (sans défense) : humain tué à chaque contact et zombie nourri (son âge recule de `gain-attaque-zombie`).
 2. Un infecté meurt ou se transforme après `delai-transformation` ; la part qui meurt est proche de `proba-mort-infection` (20 graines).
 3. `invariants-ok?` est vrai ; avec `nb-zombies = 0`, aucune infection (retour à l'état de l'itération 1).
 4. Un agent tué n'agit plus ensuite, sans erreur d'exécution.

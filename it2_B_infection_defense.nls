@@ -6,17 +6,27 @@
 ;; Le zombie declenche l'attaque dans la partie 2A et se passe lui-meme en argument.
 ;; Une defense reussie detruit ce zombie, et non le zombie le plus proche (qui pouvait
 ;; etre un autre zombie au contact).
+;;
+;; Issue d'une attaque, dans cet ordre (trois tirages independants) :
+;;  1. defense (proba-defense) : le zombie attaquant est detruit ;
+;;  2. sinon, predation (proba-mort-attaque) : l'humain est tue et le zombie se nourrit
+;;     (zombie-se-nourrir, it2_A), comme le loup qui mange un mouton dans Wolf Sheep Predation ;
+;;  3. sinon, infection (proba-infection) : l'humain devient infecte.
+;; Probabilites globales : defense d ; mort (1 - d) x m ; infection (1 - d) x (1 - m) x i.
 to detecter-et-defendre [ attaquant ]
   if attaquant != nobody [
-    ;; Tester la defense en premier. Si elle echoue, tester l'infection.
-    ifelse random-float 1 < proba-defense [
-      ask attaquant [ die ]
-      set nb-zombies-detruits nb-zombies-detruits + 1
-    ] [
-      if random-float 1 < proba-infection [
-        infecter
+    (ifelse
+      random-float 1 < proba-defense [
+        ask attaquant [ die ]
+        set nb-zombies-detruits nb-zombies-detruits + 1
       ]
-    ]
+      random-float 1 < proba-mort-attaque [
+        ask attaquant [ zombie-se-nourrir ]
+        mourir "attaque"
+      ]
+      random-float 1 < proba-infection [
+        infecter
+      ])
   ]
 end
 
