@@ -1,0 +1,39 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ITERATION 3 - PARTIE A : zombies et obstacles (deplacement)
+;; Responsable : Soumia
+;; Les zombies se deplacent dans l'environnement reel : obstacles et bords de la carte.
+;; Reglages de test : nb-obstacles = 30 (valeur par defaut), nb-zombies = 20, tous les agents presents.
+;;
+;; Etat de depart (it2_A_zombies.nls) : avancer-zombie teste la case devant avec
+;; case-franchissable? et, si elle est bloquee, tourne de 150 a 210 degres. Cela peut laisser un
+;; zombie coince dans un angle ou contre un bord (il tourne sans avancer). A verifier d'abord :
+;; compter les zombies immobiles (it3_C) avec nb-obstacles = 30, puis traiter ce qui est coince.
+;;
+;; Critere de sortie vise : aucun zombie sur un obstacle ni hors carte ; moins de 5 % de zombies
+;; immobiles ; 20 graines du modele complet sans erreur.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Vrai si le zombie n'a pas pu avancer depuis plusieurs ticks (voir it3_C : nb-zombies-immobiles).
+to-report zombie-bloque?
+  ;; TODO : definir "immobile" (par exemple : position inchangee depuis plus de N ticks).
+  ;; ATTENTION : cela demande une variable dans zombies-own (par exemple ticks-immobile),
+  ;; a declarer dans le fichier principal et a annoncer a l'equipe.
+  report false
+end
+
+;; Contourne un obstacle ou un bord plutot que de tourner sur place.
+to contourner-obstacle
+  ;; TODO : choisir une strategie et la justifier dans le rapport, par exemple :
+  ;;   - essayer a gauche puis a droite jusqu'a trouver une case franchissable (case-franchissable?) ;
+  ;;   - glisser le long de l'obstacle (avancer sur l'axe libre) ;
+  ;;   - se rapprocher de l'humain par un chemin libre (comme chemin-vers-ravitaillement, it1_B).
+  ;; TODO : l'appeler depuis avancer-zombie (it2_A) quand la case devant est bloquee, ou la
+  ;;        remplacer par contourner-obstacle : modification a coordonner avec la partie A de l'it. 2.
+end
+
+;; Sortie de secours pour un zombie coince.
+to degager-zombie-bloque
+  ;; TODO : si zombie-bloque? est vrai, le deplacer vers une case voisine franchissable
+  ;;        (jamais sur un obstacle, jamais hors de la carte).
+  ;; TODO : appeler depuis zombie-agir seulement si la strategie de contournement ne suffit pas.
+end

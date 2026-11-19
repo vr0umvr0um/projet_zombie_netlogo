@@ -15,6 +15,9 @@ __includes [
   "it2_A_zombies.nls"
   "it2_B_infection_defense.nls"
   "it2_C_indicateurs_tests.nls"
+  "it3_A_zombies_obstacles.nls"
+  "it3_B_zombies_parametres.nls"
+  "it3_C_indicateurs_tests.nls"
 ]
 
 ;; Developpement par iterations :

@@ -1,0 +1,43 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ITERATION 3 - PARTIE B : parametres des zombies
+;; Responsable : Amandine
+;; Duree de vie, vitesse et portee de detection des zombies ; reglage de leur effectif.
+;; Reglages de test : nb-obstacles = 30 (valeur par defaut), tous les agents presents.
+;;
+;; Etat de depart :
+;;  - vitesse-zombie (0,5 patch par tick) et distance-contact (1 patch) sont des reporters fixes
+;;    dans it2_A_zombies.nls ;
+;;  - portee-detection et duree-vie-zombie (480 ticks) sont des curseurs ;
+;;  - proba-defense = 0,125 a ete choisie SANS obstacle : les
+;;    obstacles changent les rencontres, donc a revalider ici ;
+;;  - depuis la predation (proba-mort-attaque = 0,1, gain-attaque-zombie = 48), aucune valeur de
+;;    proba-defense ne remplit les deux seuils, meme sans obstacle (experience
+;;    it2-calibration-defense, analyse/calibration_defense.py, 100 graines) : 0,125 est un
+;;    compromis. Le critere est a trancher en equipe AVANT les balayages ;
+;;  - gain-attaque-zombie ne change presque rien tant que les zombies meurent par la defense bien
+;;    avant duree-vie-zombie : a reexaminer si duree-vie-zombie baisse.
+;;
+;; Critere de sortie vise : vitesse, portee et duree de vie des zombies fixees et justifiees.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Applique aux zombies les parametres retenus (vitesse, portee, duree de vie).
+to appliquer-parametres-zombies
+  ;; TODO : decider si vitesse-zombie devient un curseur (suppression du reporter dans
+  ;;        it2_A_zombies.nls et ajout du curseur dans le fichier principal : a coordonner).
+  ;; TODO : verifier que la vitesse reste inferieure a celle d'un humain (1 patch par tick).
+end
+
+;; Procedure d'aide au reglage : a lancer dans BehaviorSpace, pas dans le modele.
+;; Plan de balayage a ecrire (un parametre a la fois, 100 simulations par valeur : avec 10 ou 20,
+;; le resultat bascule d'une valeur a l'autre, voir le calibrage de proba-defense) :
+;;   - vitesse des zombies : 0,25 ; 0,5 ; 0,75 ;
+;;   - portee-detection : 2 ; 3 ; 5 ;
+;;   - duree-vie-zombie : 240 ; 480 ; 720.
+;; Indicateurs a comparer : survie des humains a 720 ticks, zombies presents a 720 ticks,
+;; zombies immobiles (it3_C), humains eteints. Regime vise (critere a confirmer en equipe, voir
+;; plus haut) : zombies presents a 720 ticks dans au moins la moitie des simulations, humains
+;; eteints dans au plus 10 %. Graine = numero de repetition (random-seed), comme
+;; it2-calibration-defense, pour que les balayages soient reproductibles.
+to documenter-reglage-parametres-zombies
+  ;; TODO : rien a executer ici ; consigner les resultats pour le rapport.
+end
