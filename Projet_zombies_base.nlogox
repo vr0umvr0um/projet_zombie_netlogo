@@ -1072,7 +1072,8 @@ Iterations 1 et 2 terminees. Les sections Parametres et Hypotheses et limites so
   </linkShapes>
   <experiments>
     <experiment name="it1-stabilite" repetitions="20" sequentialRunOrder="true" runMetricsEveryStep="false" timeLimit="720">
-      <setup>setup</setup>
+      <setup>random-seed behaviorspace-run-number
+setup</setup>
       <go>go</go>
       <metrics>
         <metric>invariants-ok?</metric>
@@ -1090,7 +1091,8 @@ Iterations 1 et 2 terminees. Les sections Parametres et Hypotheses et limites so
       </constants>
     </experiment>
     <experiment name="it1-reglage-taux-naissance" repetitions="10" sequentialRunOrder="true" runMetricsEveryStep="false" timeLimit="720">
-      <setup>setup</setup>
+      <setup>random-seed behaviorspace-run-number
+setup</setup>
       <go>go</go>
       <metrics>
         <metric>proportion-survivants</metric>
@@ -1114,7 +1116,8 @@ Iterations 1 et 2 terminees. Les sections Parametres et Hypotheses et limites so
       </constants>
     </experiment>
     <experiment name="it2-courbes" repetitions="20" sequentialRunOrder="true" runMetricsEveryStep="true" timeLimit="720">
-      <setup>setup</setup>
+      <setup>random-seed behaviorspace-run-number
+setup</setup>
       <go>go</go>
       <metrics>
         <metric>count humains</metric>

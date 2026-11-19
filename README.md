@@ -67,6 +67,7 @@ Les variables communes (`globals`, `*-own`) sont dans le fichier principal : tou
 - **Boutons « Test it1 » et « Test it2 »** (procédures `tester-it1-pas` et `tester-it2-pas`) : lancent 20 graines et affichent les critères de sortie dans le Centre de commandes (comptez quelques minutes chacun). Ce sont des boutons « forever » : **recliquer dessus arrête le test**, le relancer le reprend, et « setup » l'annule. Le moniteur « Test en cours » indique la graine et le jour. Les procédures `tester-it1` et `tester-it2` font la même chose d'un seul bloc, sans interruption possible : elles servent à la ligne de commande.
 - **`invariants-ok?`** : vrai si les stocks sont positifs, les états valides, les humains et les zombies conservés, et aucune infection n'apparaît sans zombie. `liste-invariants-violes` dit lequel échoue.
 - **Expériences BehaviorSpace** : `it1-stabilite`, `it1-reglage-taux-naissance`, `it2-courbes`.
+- **Reproductibilité** : chaque test et chaque expérience fixe sa graine. `tester-it1` et les simulations de `tester-it2` utilisent les graines 1 à 20, les scénarios d'attaque et d'infection de `tester-it2` repartent de `graine-scenarios` (1), et les expériences BehaviorSpace utilisent le numéro de simulation (`random-seed behaviorspace-run-number`). Deux lancements donnent exactement la même sortie.
 
 Lancer une expérience sans interface (exemple pour `it2-courbes`, depuis ce dossier) :
 

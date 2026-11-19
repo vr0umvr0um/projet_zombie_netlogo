@@ -50,6 +50,13 @@ to-report tolerance-frequence  ;; ecart admis entre frequence observee et freque
   report 0.05
 end
 
+;; Graine des scenarios unitaires (criteres 1 et 2). Chaque scenario repart de cette graine :
+;; les frequences affichees sont identiques d'un lancement a l'autre, et un scenario ne depend
+;; pas des tirages des scenarios precedents.
+to-report graine-scenarios
+  report 1
+end
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Scenarios unitaires
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -198,6 +205,7 @@ end
 ;;    clic (quelques secondes), puis chaque passage avance d'un jour simule. Recliquer arrete le test.
 
 ;; Criteres 1 et 2 : attaques isolees et issue de l'infection.
+;; Chaque scenario repart de graine-scenarios : resultats identiques d'un lancement a l'autre.
 to afficher-scenarios-it2
   let n nb-essais-attaque
   let tol tolerance-frequence
@@ -205,10 +213,15 @@ to afficher-scenarios-it2
   ;; --- critere 1 : scenarios d'attaque, probabilites [ defense mort infection ] ---
   ;; frequences-attaque renvoie [ defense infecte indemne tue ages-apres-repas ]
   preparer-test
+  random-seed graine-scenarios
   let f-sans-effet frequences-attaque n 0 0 0
+  random-seed graine-scenarios
   let f-defense-sure frequences-attaque n 1 1 1
+  random-seed graine-scenarios
   let f-infection-sure frequences-attaque n 0 0 1
+  random-seed graine-scenarios
   let f-mort-sure frequences-attaque n 0 1 1
+  random-seed graine-scenarios
   let f-mixte frequences-attaque n 0.3 0.2 0.5
   let age-attendu max (list 0 (age-test-zombie - gain-attaque-zombie))
   let ages-repas remove-duplicates item 4 f-mort-sure
@@ -227,7 +240,9 @@ to afficher-scenarios-it2
 
   ;; --- critere 2 : issue de l'infection ---
   preparer-test
+  random-seed graine-scenarios
   let apres-delai issue-infection n delai-transformation
+  random-seed graine-scenarios
   let avant-delai issue-infection n 0
   let part-morts (item 0 apres-delai) / n
   print "--- Critere 2 : issue de l'infection ---"
@@ -259,11 +274,11 @@ end
 to annoncer-test-it2
   print "=== Test iteration 2 : humain / zombie ==="
   print "Ce test verifie :"
-  print (word "  1. attaques isolees (" nb-essais-attaque " attaques par cas, un humain et un zombie seuls) :"
+  print (word "  1. attaques isolees (" nb-essais-attaque " attaques par cas, un humain et un zombie seuls, graine " graine-scenarios ") :"
     " sans defense, mort ni infection -> humain indemne ; defense 1 -> zombie toujours detruit ;"
     " infection 1 (sans defense ni mort) -> toujours infecte ; mort 1 -> humain toujours tue et le zombie se nourrit"
     " (son age recule de gain-attaque-zombie) ; defense 0,3, mort 0,2, infection 0,5 -> 0,3 / 0,14 / 0,28 +/- " tolerance-frequence " ;")
-  print (word "  2. issue de l'infection (" nb-essais-attaque " infectes) : rien avant delai-transformation ; tous meurent ou se transforment apres ;"
+  print (word "  2. issue de l'infection (" nb-essais-attaque " infectes, graine " graine-scenarios ") : rien avant delai-transformation ; tous meurent ou se transforment apres ;"
     " part de morts = proba-mort-infection +/- " tolerance-frequence " ;")
   print (word "  3. " nb-graines-test " simulations de 720 ticks (20 zombies, 0 obstacle, graines 1 a " nb-graines-test
     ") avec invariants-ok? vrai a chaque tick, puis une simulation sans zombie : aucune infection ;")

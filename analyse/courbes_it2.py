@@ -8,7 +8,8 @@ Usage, depuis la racine du depot :
     python analyse/courbes_it2.py
 
 Pour regenerer le CSV (NetLogo 7.0.4, 20 simulations de 720 ticks, nb-zombies = 20,
-nb-obstacles = 0, reglages par defaut des curseurs) :
+nb-obstacles = 0, reglages par defaut des curseurs,
+graine = numero de simulation, donc CSV reproductible) :
     netlogo-headless --model Projet_zombies_base.nlogox --experiment it2-courbes ^
         --threads 8 --table results/it2_courbes.csv
 """
