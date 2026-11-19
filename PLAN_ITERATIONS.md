@@ -9,7 +9,7 @@ Les dates ci-dessous sont une proposition à ajuster selon vos disponibilités.
 - **Trois parties (A, B, C) par itération**, travaillées en parallèle, une par personne, chacune dans son fichier `.nls`.
 - **Séance d'assemblage** à la fin de chaque itération : on fusionne, on compile, on vérifie les critères de sortie, puis on répartit l'itération suivante.
 - **On ne passe pas à l'itération suivante** tant que les critères de sortie ne sont pas tous vérifiés.
-- **Rotation conseillée** : changez de lettre (A, B, C) d'une itération à l'autre. Chacun doit comprendre tout le modèle pour l'oral.
+- **Répartition fixe** : chaque personne garde la même lettre (A, B, C) à chaque itération (décision de l'équipe : Soumia A, Amandine B, Vanessa C). Pour que chacune comprenne tout le modèle pour l'oral, une relecture croisée précède chaque assemblage.
 
 | It. | Paire testée | Agents actifs | Dates | Sorties attendues |
 |---|---|---|---|---|
@@ -68,13 +68,15 @@ Le code des parties A et B est écrit, assemblé et testé (`tester-it2`).
 
 ## Itération 3 - environnement / zombie
 
-**Réglages de test** : `nb-obstacles` normal, tous les agents présents. `proba-defense = 0,125` a été recalibrée avec 0 et 30 obstacles (`it2-calibration-defense`) ; `analyse/validation_reglages.py` donne l'effet de chaque curseur, dont `portee-detection` et `duree-vie-zombie`, à reprendre pour la partie B.
+**Réglages de test** : `nb-obstacles = 30` (valeur par défaut), `nb-zombies = 20`, tous les agents présents. `proba-defense = 0,125` a été recalibrée avec 0 et 30 obstacles (`it2-calibration-defense`, critère rempli depuis que la colonie protège ses habitants) ; `analyse/validation_reglages.py` donne l'effet de chaque curseur, dont `portee-detection` et `duree-vie-zombie`, à reprendre pour la partie B.
 
-| Partie | Contenu prévu |
-|---|---|
-| A | Déplacement des zombies autour des obstacles et des bords (aucun zombie ne reste bloqué) |
-| B | Durée de vie, vitesse et portée de détection des zombies ; réglage de leur effectif |
-| C | Indicateurs spatiaux (carte de densité des zombies), invariant « aucun zombie sur un obstacle », courbes |
+| Partie | Fichier | Contenu |
+|---|---|---|
+| A | `it3_A_zombies_obstacles.nls` | déplacement des zombies autour des obstacles et des bords (aucun zombie ne reste bloqué) |
+| B | `it3_B_zombies_parametres.nls` | durée de vie, vitesse et portée de détection des zombies ; réglage de leur effectif |
+| C | `it3_C_indicateurs_tests.nls` | indicateurs spatiaux (carte de densité des zombies), invariant « aucun zombie sur un obstacle », `tester-it3`, courbes |
+
+Les trois fichiers sont des squelettes commentés : structure, procédures vides marquées `TODO`, aucun comportement nouveau.
 
 **Critères de sortie** : aucun zombie sur un obstacle ni hors carte ; moins de 5 % de zombies immobiles ; 20 graines du modèle complet sans erreur ; vitesse, portée et durée de vie des zombies fixées et justifiées.
 
