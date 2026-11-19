@@ -3,11 +3,10 @@
 ;; Defense, infection et transformation cote humain.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Le zombie declenche l'attaque dans la partie 2A.
-;; L'humain cherche le zombie le plus proche a distance de contact.
-to detecter-et-defendre
-  let attaquant min-one-of (zombies in-radius distance-contact) [ distance myself ]
-
+;; Le zombie declenche l'attaque dans la partie 2A et se passe lui-meme en argument.
+;; Une defense reussie detruit ce zombie, et non le zombie le plus proche (qui pouvait
+;; etre un autre zombie au contact).
+to detecter-et-defendre [ attaquant ]
   if attaquant != nobody [
     ;; Tester la defense en premier. Si elle echoue, tester l'infection.
     ifelse random-float 1 < proba-defense [

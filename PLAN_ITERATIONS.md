@@ -118,7 +118,7 @@ Indépendante du code, à avancer dès l'itération 1 par la personne la plus li
 ## Contrats entre parties
 
 - `mourir [ cause ]` : "infection", "attaque" ou "famine" ; incrémente le compteur et retire l'agent (fichier A de l'itération 1).
-- `detecter-et-defendre` : procédure d'humain, appelée par le zombie qui attaque, jamais par `humain-agir`.
+- `detecter-et-defendre [ attaquant ]` : procédure d'humain, appelée par le zombie qui attaque (il se passe lui-même en argument), jamais par `humain-agir`. Une défense réussie détruit cet attaquant.
 - `initialiser-humain [ maison ]` : variables d'un nouvel humain (fichier B de l'itération 1), utilisée par `setup-humains` et `reproduire`.
 - `actualiser-affichage-colonies` : étiquette et couleur des colonies, affichage seulement (fichier A de l'itération 1).
 - `infecter`, `transformer` : procédures d'humain (itération 2).
