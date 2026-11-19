@@ -98,6 +98,13 @@ to-report nb-humains-en-sortie
   report count humains with [ mission != "colonie" ]
 end
 
+;; Gain net moyen d'une sortie terminee (depot - avance), voir le bilan en tete de it1_B
+to-report gain-moyen-sortie
+  ifelse nb-sorties-terminees > 0
+    [ report gain-net-sorties / nb-sorties-terminees ]
+    [ report 0 ]
+end
+
 ;; Plus grand nombre d'humains simultanement en sortie pour une meme colonie.
 ;; Sert a choisir le plafond de sorties simultanees (decision B et C).
 to-report max-sorties-par-colonie

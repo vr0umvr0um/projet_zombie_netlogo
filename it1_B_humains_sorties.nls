@@ -4,11 +4,32 @@
 ;; Utilise mourir [cause] de la partie A.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Cache de decider-sortie (voir ce commentaire). Propre a ce fichier ; clear-all le remet a 0.
+;; Variables propres a ce fichier ; clear-all les remet a 0.
 globals [
-  cases-sans-trajet        ;; cases de depart sans trajet rentable au tick tick-cases-sans-trajet
-  tick-cases-sans-trajet
+  cases-sans-trajet        ;; cache de decider-sortie : cases de depart sans trajet rentable
+  tick-cases-sans-trajet   ;;   au tick tick-cases-sans-trajet
+  nb-sorties-terminees     ;; sorties revenues a la colonie
+  nb-sorties-deficitaires  ;; sorties revenues avec un gain net <= 0 (doit rester a 0, invariant it1_C)
+  gain-net-sorties         ;; somme des gains nets des sorties terminees
 ]
+
+;; BILAN D'UNE SORTIE de n pas (rentabilite, voir sortie-rentable?) :
+;;  - la colonie avance n + 1 unites au depart (ration-depart) ;
+;;  - l'humain en consomme n a l'aller, arrive avec 1 unite et collecte q unites ;
+;;  - il en consomme n au retour et depose 1 + q - n a la colonie.
+;; Gain net pour la colonie = depot - avance = q - 2n. Une sortie n'est lancee que si la
+;; quantite collectable est > 2n : chaque sortie terminee rapporte plus qu'elle ne consomme.
+
+;; Quantite que l'humain pourra collecter sur ce point : le stock, dans la limite de la place
+;; dans son sac a l'arrivee (capacite-transport - 1, car il arrive avec 1 unite).
+to-report quantite-collectable [ point ]
+  report min (list ([ stock-point ] of point) (capacite-transport - 1))
+end
+
+;; Vrai si une sortie de nb-pas pas vers ce point rapporte plus qu'elle ne consomme.
+to-report sortie-rentable? [ point nb-pas ]
+  report quantite-collectable point > 2 * nb-pas
+end
 
 ;; Repartir les humains entre les colonies et initialiser leurs variables.
 to setup-humains
@@ -145,11 +166,12 @@ to-report chemin-vers-ravitaillement
     set file-attente but-first file-attente
     let case-actuelle last trajet
 
-    ;; Une sortie doit etre rentable. Elle coute environ
-    ;; 2 x distance (avance prelevee a l'aller + trajet de retour) : le point doit contenir
-    ;; plus que cela, sinon on cherche un point plus riche, meme plus loin.
+    ;; Une sortie doit etre rentable (voir le bilan en tete de fichier) : sinon on cherche un
+    ;; point plus riche, meme plus loin. Le trajet inclut la case de depart : n = longueur - 1.
+    ;; L'ancienne regle (stock > 2 x longueur) ignorait la capacite de transport : au-dela de
+    ;; 24 pas, une sortie perdait de la nourriture meme sur un point plein.
     if [type-patch] of case-actuelle = "ravitaillement" and
-       [stock-point] of case-actuelle > 2 * length trajet [
+       sortie-rentable? case-actuelle (length trajet - 1) [
       report trajet
     ]
 
@@ -235,6 +257,12 @@ to rentrer-a-la-colonie
     ask colonie-origine [
       set stock-colonie stock-colonie + nourriture-rapportee
     ]
+
+    ;; Bilan de la sortie : depot - avance de depart (= longueur du trajet).
+    let gain-net nourriture-rapportee - length chemin-aller
+    set nb-sorties-terminees nb-sorties-terminees + 1
+    set gain-net-sorties gain-net-sorties + gain-net
+    if gain-net <= 0 [ set nb-sorties-deficitaires nb-sorties-deficitaires + 1 ]
 
     ;; Reinitialiser les variables de sortie pour la prochaine mission.
     set nourriture-perso 0
