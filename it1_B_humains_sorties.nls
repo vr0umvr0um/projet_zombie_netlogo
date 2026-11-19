@@ -66,7 +66,7 @@ to decider-sortie
 
   if reserve >= s-min [ stop ]
 
-  ;; Decision D3 (DECISIONS_IT1.md) : plafond de 1 sortie simultanee par colonie, confirme.
+  ;; Plafond de 1 sortie simultanee par colonie, confirme.
   ;; C'est la valeur qui donne la meilleure survie. Cause des plafonds 2 et 4 mesuree : courses
   ;; aux points (une course perdue = un mort en route), puis avance de nourriture perdue qui
   ;; vide la colonie. A reexaminer a l'iteration 4 (groupes, departs simultanes).
@@ -116,7 +116,7 @@ to-report chemin-vers-ravitaillement
     set file-attente but-first file-attente
     let case-actuelle last trajet
 
-    ;; Decision D2 (DECISIONS_IT1.md) : une sortie doit etre rentable. Elle coute environ
+    ;; Une sortie doit etre rentable. Elle coute environ
     ;; 2 x distance (avance prelevee a l'aller + trajet de retour) : le point doit contenir
     ;; plus que cela, sinon on cherche un point plus riche, meme plus loin.
     if [type-patch] of case-actuelle = "ravitaillement" and
@@ -169,7 +169,7 @@ end
 
 ;; Prendre la quantite disponible dans la limite de la place restante.
 to collecter
-  ;; Decision D4 (DECISIONS_IT1.md) : pas de reservation du stock au depart. Avec un plafond
+  ;; Pas de reservation du stock au depart. Avec un plafond
   ;; de 1 sortie par colonie elle n'apporte aucun gain mesure. Elle supprime pourtant les courses
   ;; perdues : necessaire des que plusieurs humains partent ensemble (iteration 4).
   ;; Relire le stock a l'arrivee : un autre humain a pu collecter avant.

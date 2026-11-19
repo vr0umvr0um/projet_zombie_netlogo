@@ -81,10 +81,10 @@ end
 ;; consommation-jour unites du stock de sa colonie. Les humains en sortie ne consomment rien
 ;; ici : ils consomment la nourriture qu'ils transportent (voir it1_B, aller-vers-point).
 ;;
-;; Decision D5 (DECISIONS_IT1.md) : regle de famine inchangee. Chaque humain present non
+;; Regle de famine inchangee. Chaque humain present non
 ;; nourri meurt le jour meme ; quand le stock d'une colonie tombe a zero, tous ses habitants
 ;; restants meurent donc ensemble. Un delai de grace n'est a envisager que si le critere 4
-;; de l'iteration 1 resiste apres D1 et D2.
+;; de l'iteration 1 resiste avec les reglages actuels.
 to evenements-journaliers
   ask colonies [
     let maison self

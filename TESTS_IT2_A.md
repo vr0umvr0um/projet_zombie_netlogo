@@ -31,5 +31,5 @@ Les points ci-dessus ont évolué depuis ces premiers essais ; le texte d'origin
 
 - **Réglé** : `setup-zombies` et `zombie-agir` ne sont plus commentés dans le fichier principal, et `evoluer-infection` est branché dans `humain-agir` (partie B).
 - **Réglé** : le test est maintenant automatique. `tester-it2` (bouton « Test it2 ») reprend les scénarios d'attaque et d'issue de l'infection, puis lance 20 simulations de 720 ticks, avec invariants vérifiés à chaque tick ; il n'y a plus de limite « pas de campagne automatique ».
-- **Valeurs de départ** : `proba-defense` est maintenant **0,125** (décision D11, `DECISIONS_IT1.md`) et non plus 0,3 ; `proba-infection` (0,5) et `portee-detection` (3) sont inchangées ; `nb-obstacles = 0` est appliqué par le test de l'itération 2.
+- **Valeurs de départ** : `proba-defense` est maintenant **0,125** et non plus 0,3 ; `proba-infection` (0,5) et `portee-detection` (3) sont inchangées ; `nb-obstacles = 0` est appliqué par le test de l'itération 2.
 - **Toujours ouvert** : la défense (`detecter-et-defendre`, partie B) cible le zombie le plus proche au contact, pas forcément celui qui attaque ; le test avec deux zombies ne le vérifie pas.

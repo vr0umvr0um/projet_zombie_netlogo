@@ -40,7 +40,7 @@ to-report seuil-survie-max     ;; proportion-survivants maximale a 720 ticks san
   report 1.1
 end
 
-to-report part-min-dans-intervalle   ;; part minimale de simulations dans l'intervalle de survie (D7)
+to-report part-min-dans-intervalle   ;; part minimale de simulations dans l'intervalle de survie
   report 0.9
 end
 
@@ -200,7 +200,7 @@ to afficher-criteres-it1 [ resultats ]
   print "--- Criteres de sortie ---"
   print (word "1. aucune erreur sur " nb-graines-test " graines : vrai (le test est alle au bout)")
   print (word "2. invariants vrais a chaque tick : " reduce [ [ a b ] -> a and b ] invariants)
-  ;; Decision D7 (DECISIONS_IT1.md) : le critere tient compte du hasard. Il faut que la survie
+  ;; Le critere tient compte du hasard. Il faut que la survie
   ;; moyenne soit dans l'intervalle ET qu'au moins part-min-dans-intervalle des simulations y soient.
   let dans-intervalle length filter [ s -> s >= seuil-survie-min and s <= seuil-survie-max ] survies
   let moyenne-survie mean survies
@@ -210,7 +210,7 @@ to afficher-criteres-it1 [ resultats ]
     nb-min-dans-intervalle " simulations sur " nb-graines-test " et en moyenne : " critere-3?
     " (" dans-intervalle " sur " nb-graines-test " dans l'intervalle, moyenne " precision moyenne-survie 3
     ", min " precision min survies 3 ", max " precision max survies 3 ")")
-  ;; Decision D10 (DECISIONS_IT1.md) : meme logique que le critere 3. Environ 2 % des simulations
+  ;; Meme logique que le critere 3. Environ 2 % des simulations
   ;; sortent du seuil par hasard (colonie malchanceuse) ; on exige donc que la moyenne respecte le
   ;; seuil ET qu'au moins part-min-dans-intervalle des simulations le respectent.
   let sims-famine-ok length filter [ f -> f < seuil-famine ] famines

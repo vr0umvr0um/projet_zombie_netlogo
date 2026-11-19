@@ -17,8 +17,8 @@ __includes [
   "it2_C_indicateurs_tests.nls"
 ]
 
-;; Developpement par iterations : voir PLAN_ITERATIONS.md.
-;; Un fichier par partie (A, B, C) et par iteration ; ajouter ici ceux des iterations suivantes.
+;; Developpement par iterations :
+;; Un fichier par partie et par iteration ;
 ;; Fichier commun : variables partagees, setup, go.
 ;; Toute modification des variables ci-dessous doit etre annoncee aux deux autres.
 
@@ -217,7 +217,7 @@ Quelle strategie de ravitaillement (individuelle, groupe fixe, groupe adaptatif)
 
 ## Etat d'avancement
 
-Iterations 1 et 2 terminees (voir README.md et PLAN_ITERATIONS.md). Les sections Parametres et Hypotheses et limites sont a rediger par l'equipe.
+Iterations 1 et 2 terminees. Les sections Parametres et Hypotheses et limites sont a rediger par l'equipe.
 
 ## Hypotheses et limites
 
