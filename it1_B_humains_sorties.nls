@@ -4,6 +4,12 @@
 ;; Utilise mourir [cause] de la partie A.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Cache de decider-sortie (voir ce commentaire). Propre a ce fichier ; clear-all le remet a 0.
+globals [
+  cases-sans-trajet        ;; cases de depart sans trajet rentable au tick tick-cases-sans-trajet
+  tick-cases-sans-trajet
+]
+
 ;; Repartir les humains entre les colonies et initialiser leurs variables.
 to setup-humains
   let nombre-colonies count colonies
@@ -92,8 +98,22 @@ to decider-sortie
   ]
   if sorties-en-cours >= plafond-sorties [ stop ]
 
+  ;; Cache des cases sans trajet rentable pour le tick en cours. Tant qu'aucun point n'est
+  ;; rentable, chaque humain present refaisait le meme parcours en largeur a chaque tick. Le
+  ;; resultat ne depend que de la case de depart et des stocks des points ; pendant la phase des
+  ;; humains, ces stocks ne font que baisser (collecter) : une case sans trajet le reste jusqu'au
+  ;; tick suivant. Le cache ne change donc aucun resultat, il evite seulement des calculs.
+  if tick-cases-sans-trajet != ticks or not is-patch-set? cases-sans-trajet [
+    set cases-sans-trajet no-patches
+    set tick-cases-sans-trajet ticks
+  ]
+  if member? patch-here cases-sans-trajet [ stop ]
+
   let trajet chemin-vers-ravitaillement
-  if empty? trajet [ stop ]
+  if empty? trajet [
+    set cases-sans-trajet (patch-set cases-sans-trajet patch-here)
+    stop
+  ]
 
   ;; La liste inclut la case de depart : longueur = nombre de pas + 1.
   ;; Cette ration laisse une unite a l'arrivee. Regle a confirmer avec A.
