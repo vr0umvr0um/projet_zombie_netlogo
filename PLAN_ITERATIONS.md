@@ -42,14 +42,14 @@ Les fichiers des itérations 3 à 5 sont créés au début de chaque itération.
 **Critères de sortie** :
 1. `setup` puis 720 ticks de `go` sans erreur, sur 20 graines.
 2. `invariants-ok?` est vrai tout au long de la simulation.
-3. Sans zombie, la population reste stable : `proportion-survivants` entre 0,9 et 1,1 à 720 ticks (seuil à ajuster).
-4. Les points de ravitaillement se régénèrent et ne tombent pas durablement à zéro ; les morts de famine restent inférieures à 5 % des humains.
+3. Sans zombie, la population reste stable : `proportion-survivants` entre 0,9 et 1,1 à 720 ticks, en moyenne et pour au moins 18 simulations sur 20 (décision D7, `DECISIONS_IT1.md`).
+4. Les points de ravitaillement se régénèrent et ne tombent pas durablement à zéro (moins de 10 % des ticks sans point) ; les morts de famine restent inférieures à 5 % des humains, en moyenne et pour au moins 18 simulations sur 20 (décision D10, `DECISIONS_IT1.md`).
 5. Au moins une sortie complète est observée par colonie (aller, collecte, retour) sans traverser d'obstacle.
 6. Les deux consommations sont distinguées et documentées : 1 unité par tick de déplacement, `consommation-jour` à la colonie.
 
 ## Itération 2 - humain / zombie
 
-**Réglages de test** : `nb-zombies = 20`, `nb-obstacles = 0`, pour isoler l'interaction humain/zombie.
+**Réglages de test** : `nb-zombies = 20`, `nb-obstacles = 0`, `proba-defense = 0,125` (décision D11), pour isoler l'interaction humain/zombie.
 
 | Partie | Fichier | Contenu |
 |---|---|---|
@@ -57,7 +57,7 @@ Les fichiers des itérations 3 à 5 sont créés au début de chaque itération.
 | B | `it2_B_infection_defense.nls` | côté humain : `detecter-et-defendre`, `infecter`, `evoluer-infection`, `transformer` ; branchement de `evoluer-infection` dans `humain-agir` |
 | C | `it2_C_indicateurs_tests.nls` | infectés, part d'infectés, scénarios unitaires, courbes humains/zombies |
 
-Le code des parties A et B de cette itération est déjà écrit (relu, à tester) ; son test reste à faire.
+Le code des parties A et B est écrit, assemblé et testé (`tester-it2`, version marquée par le tag `it1-it2`).
 
 **Critères de sortie** :
 1. `proba-infection = 0` : aucune infection. `proba-defense = 1` : aucun humain infecté et zombies détruits. `proba-defense = 0` et `proba-infection = 1` : infection à chaque contact.

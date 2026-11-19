@@ -1,8 +1,64 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ITERATION 1 - PARTIE C : indicateurs et verification
 ;; Responsable : (a remplir)
-;; Indicateurs de population et de stocks, invariants, courbes.
-;; A faire : regler taux-naissance (population stable sans zombie), scenarios de test, plafond de sorties (avec B).
+;; Indicateurs de population et de stocks, invariants, tests de l'iteration.
+;;
+;; Mode d'emploi :
+;;  - bouton "Test it1" (procedure tester-it1-pas, bouton "forever") : 20 graines, nb-zombies = 0,
+;;    tableau et verdict dans le Centre de commandes. Recliquer sur le bouton arrete le test ;
+;;    tester-it1 fait la meme chose d'un seul bloc (ligne de commande, BehaviorSpace) ;
+;;  - BehaviorSpace : it1-stabilite (criteres 2 a 4) et it1-reglage-taux-naissance
+;;    (choix de taux-naissance pour que la population reste stable sans zombie).
+;; Les criteres 1, 5 et 6 de PLAN_ITERATIONS.md se verifient a la main.
+;; Depend des parties A et B : tant qu'elles sont des squelettes, les tests s'executent mais echouent.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Declaration de variables : elle doit preceder les procedures (voir plus bas, 'Test').
+;; Etat du test pas a pas. clear-all (dans setup) remet ces variables a 0 : commencer-simulation-it1
+;; les sauvegarde et les restaure autour de setup.
+globals [
+  test1-graine             ;; 0 = pas de test en cours ; sinon numero de la graine en cours
+  test1-resultats          ;; liste des resultats des graines terminees
+  test1-ticks-sans-point
+  test1-max-dehors
+  test1-invariants-ok?
+]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Seuils des criteres de sortie (a ajuster, a justifier dans le rapport)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report nb-graines-test
+  report 20
+end
+
+to-report seuil-survie-min     ;; proportion-survivants minimale a 720 ticks sans zombie
+  report 0.9
+end
+
+to-report seuil-survie-max     ;; proportion-survivants maximale a 720 ticks sans zombie
+  report 1.1
+end
+
+to-report part-min-dans-intervalle   ;; part minimale de simulations dans l'intervalle de survie (D7)
+  report 0.9
+end
+
+;; Nombre minimal de simulations dans l'intervalle (18 sur 20)
+to-report nb-min-dans-intervalle
+  report ceiling (part-min-dans-intervalle * nb-graines-test)
+end
+
+to-report seuil-famine         ;; part maximale d'humains morts de famine
+  report 0.05
+end
+
+to-report seuil-points-vides   ;; part maximale des ticks ou tous les points sont epuises
+  report 0.1
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Indicateurs
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to-report nb-humains-vivants
@@ -17,36 +73,234 @@ to-report proportion-survivants
     [ report 0 ]
 end
 
+;; Part des humains initiaux morts de famine
+to-report part-famine
+  ifelse nb-humains-initial > 0
+    [ report nb-morts-famine / nb-humains-initial ]
+    [ report 0 ]
+end
+
 to-report stock-total-colonies
-  report 0 ;; TODO : somme des stock-colonie
+  report sum [ stock-colonie ] of colonies
 end
 
 to-report stock-total-points
-  report 0 ;; TODO : somme des stock-point des patches "ravitaillement"
+  report sum [ stock-point ] of patches with [ type-patch = "ravitaillement" ]
 end
 
+;; Colonies abritant au moins un humain vivant non transforme
 to-report nb-colonies-actives
-  report 0 ;; TODO : colonies avec au moins un humain vivant non transforme
+  report count colonies with [ any? humains with [ colonie-origine = myself ] ]
+end
+
+;; Humains hors de leur colonie (en route vers un point ou de retour)
+to-report nb-humains-en-sortie
+  report count humains with [ mission != "colonie" ]
+end
+
+;; Plus grand nombre d'humains simultanement en sortie pour une meme colonie.
+;; Sert a choisir le plafond de sorties simultanees (decision B et C).
+to-report max-sorties-par-colonie
+  ifelse any? colonies
+    [ report max [ count humains with [ colonie-origine = myself and mission != "colonie" ] ] of colonies ]
+    [ report 0 ]
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Verification : invariants
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Liste des invariants violes (vide si tout va bien) : utile pour comprendre un echec
+to-report liste-invariants-violes
+  let violes []
+  if any? colonies with [ stock-colonie < 0 ]
+    [ set violes lput "stock de colonie negatif" violes ]
+  if any? patches with [ stock-point < 0 ]
+    [ set violes lput "stock de point de ravitaillement negatif" violes ]
+  if any? humains with [ nourriture-perso < 0 ]
+    [ set violes lput "nourriture transportee negative" violes ]
+  if any? humains with [ not (etat = "sain" or etat = "infecte") ]
+    [ set violes lput "etat d'humain invalide" violes ]
+  if any? humains with [ [ type-patch ] of patch-here = "obstacle" ]
+    [ set violes lput "humain sur un obstacle" violes ]
+
+  ;; conservation des humains : initiaux + naissances = vivants + transformes + morts
+  if (nb-humains-initial + nb-naissances) !=
+     (count humains + nb-transformations + nb-morts-infection + nb-morts-attaque + nb-morts-famine)
+    [ set violes lput "conservation des humains" violes ]
+
+  ;; conservation des zombies : initiaux + transformes = vivants + detruits + morts de vieillesse
+  if (nb-zombies-initial + nb-transformations) !=
+     (count zombies + nb-zombies-detruits + nb-zombies-vieux)
+    [ set violes lput "conservation des zombies" violes ]
+
+  ;; sans zombie initial (et sans infecte initial), aucune infection n'apparait
+  if nb-zombies-initial = 0 and nb-nouvelles-infections > 0
+    [ set violes lput "infection sans source" violes ]
+
+  report violes
 end
 
 ;; Vrai si tous les invariants sont respectes. A tester a la main ou dans BehaviorSpace
 to-report invariants-ok?
-  ;; stocks jamais negatifs
-  let stocks-ok? (all? colonies [ stock-colonie >= 0 ]) and (all? patches [ stock-point >= 0 ])
+  report empty? liste-invariants-violes
+end
 
-  ;; un seul etat par humain
-  let etats-ok? all? humains [ etat = "sain" or etat = "infecte" ]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test de l'iteration 1 : environnement / humain, sans zombie
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; conservation des humains : initiaux + naissances = vivants + transformes + morts
-  let humains-ok? (nb-humains-initial + nb-naissances) =
-    (count humains + nb-transformations + nb-morts-infection + nb-morts-attaque + nb-morts-famine)
+;; Deux facons de lancer le test, qui donnent exactement les memes resultats :
+;;  - tester-it1 : d'un seul bloc (ligne de commande, BehaviorSpace). On ne peut pas l'interrompre ;
+;;  - tester-it1-pas : bouton "Test it1" (bouton "forever"). Chaque passage avance le test d'un jour
+;;    simule (24 ticks). Recliquer sur le bouton l'arrete a tout moment ; le relancer reprend la ou
+;;    il en etait. Cliquer sur "setup" annule le test en cours.
 
-  ;; conservation des zombies : initiaux + transformes = vivants + detruits + morts de vieillesse
-  let zombies-ok? (nb-zombies-initial + nb-transformations) =
-    (count zombies + nb-zombies-detruits + nb-zombies-vieux)
+;; Une simulation complete (nb-zombies = 0) pour une graine donnee.
+;; Renvoie : [ graine  invariants-ok  proportion-survivants  part-famine
+;;             part-des-ticks-sans-point  max-sorties-par-colonie ]
+;; ATTENTION : appelle setup, donc efface la simulation en cours.
+to-report evaluer-it1 [ graine ]
+  let anciens-zombies nb-zombies
+  random-seed graine
+  set nb-zombies 0
+  setup
 
-  ;; sans zombie initial (et sans infecte initial), aucune infection n'apparait
-  let source-ok? (nb-zombies-initial > 0) or (nb-nouvelles-infections = 0)
+  let ticks-sans-point 0
+  let max-dehors 0
+  let invariants-toujours-ok? true
+  while [ ticks < duree-simulation ] [
+    go
+    if stock-total-points = 0 [ set ticks-sans-point ticks-sans-point + 1 ]
+    set max-dehors max (list max-dehors max-sorties-par-colonie)
+    if not invariants-ok? [ set invariants-toujours-ok? false ]
+  ]
 
-  report stocks-ok? and etats-ok? and humains-ok? and zombies-ok? and source-ok?
+  set nb-zombies anciens-zombies
+  report (list graine invariants-toujours-ok? proportion-survivants part-famine
+               (ticks-sans-point / duree-simulation) max-dehors)
+end
+
+to afficher-ligne-it1 [ r ]
+  print (word "graine " item 0 r
+    " | invariants " item 1 r
+    " | survie " precision item 2 r 3
+    " | famine " precision item 3 r 3
+    " | sans point " precision item 4 r 3
+    " | max sorties/colonie " item 5 r)
+end
+
+;; Affiche les criteres de sortie de l'iteration 1 a partir de la liste des resultats.
+to afficher-criteres-it1 [ resultats ]
+  let invariants map [ r -> item 1 r ] resultats
+  let survies map [ r -> item 2 r ] resultats
+  let famines map [ r -> item 3 r ] resultats
+  let sans-point map [ r -> item 4 r ] resultats
+
+  print "--- Criteres de sortie ---"
+  print (word "1. aucune erreur sur " nb-graines-test " graines : vrai (le test est alle au bout)")
+  print (word "2. invariants vrais a chaque tick : " reduce [ [ a b ] -> a and b ] invariants)
+  ;; Decision D7 (DECISIONS_IT1.md) : le critere tient compte du hasard. Il faut que la survie
+  ;; moyenne soit dans l'intervalle ET qu'au moins part-min-dans-intervalle des simulations y soient.
+  let dans-intervalle length filter [ s -> s >= seuil-survie-min and s <= seuil-survie-max ] survies
+  let moyenne-survie mean survies
+  let critere-3? (dans-intervalle >= nb-min-dans-intervalle)
+    and (moyenne-survie >= seuil-survie-min) and (moyenne-survie <= seuil-survie-max)
+  print (word "3. survie dans [" seuil-survie-min " ; " seuil-survie-max "] pour au moins "
+    nb-min-dans-intervalle " simulations sur " nb-graines-test " et en moyenne : " critere-3?
+    " (" dans-intervalle " sur " nb-graines-test " dans l'intervalle, moyenne " precision moyenne-survie 3
+    ", min " precision min survies 3 ", max " precision max survies 3 ")")
+  ;; Decision D10 (DECISIONS_IT1.md) : meme logique que le critere 3. Environ 2 % des simulations
+  ;; sortent du seuil par hasard (colonie malchanceuse) ; on exige donc que la moyenne respecte le
+  ;; seuil ET qu'au moins part-min-dans-intervalle des simulations le respectent.
+  let sims-famine-ok length filter [ f -> f < seuil-famine ] famines
+  let sims-points-ok length filter [ p -> p < seuil-points-vides ] sans-point
+  let critere-4? (sims-famine-ok >= nb-min-dans-intervalle) and (mean famines < seuil-famine)
+    and (sims-points-ok >= nb-min-dans-intervalle) and (mean sans-point < seuil-points-vides)
+  print (word "4. famine < " seuil-famine " et points epuises < " seuil-points-vides " des ticks, pour au moins "
+    nb-min-dans-intervalle " simulations sur " nb-graines-test " et en moyenne : " critere-4?
+    " (" sims-famine-ok " sur " nb-graines-test " sous le seuil de famine, famine moyenne " precision mean famines 3
+    ", max " precision max famines 3 " ; " sims-points-ok " sur " nb-graines-test " sous le seuil de points epuises, max "
+    precision max sans-point 3 ")")
+  print (word "   plafond de sorties : max observe " max map [ r -> item 5 r ] resultats " humains par colonie")
+  print "5 et 6 : a verifier a la main (sortie complete, deux consommations documentees)."
+end
+
+;; Test d'un seul bloc : nb-graines-test simulations, puis les criteres de sortie.
+;; Une erreur d'execution pendant le test signifie que le critere 1 n'est pas rempli.
+to tester-it1
+  print "=== Test iteration 1 (nb-zombies = 0) ==="
+  let resultats n-values nb-graines-test [ i -> evaluer-it1 (i + 1) ]
+  foreach resultats [ r -> afficher-ligne-it1 r ]
+  afficher-criteres-it1 resultats
+end
+
+;; Test pas a pas (bouton "Test it1", "forever"). Meme procedure que tester-it1, decoupee en jours.
+to tester-it1-pas
+  if test1-graine = 0 [ demarrer-test-it1 ]
+  ifelse ticks < duree-simulation [
+    repeat ticks-par-jour [
+      if ticks < duree-simulation [ mesurer-un-tick-it1 ]
+    ]
+  ] [
+    enregistrer-simulation-it1
+    ifelse test1-graine < nb-graines-test [
+      commencer-simulation-it1 (test1-graine + 1)
+    ] [
+      afficher-criteres-it1 test1-resultats
+      set test1-graine 0
+      stop
+    ]
+  ]
+end
+
+to demarrer-test-it1
+  print "=== Test iteration 1 (nb-zombies = 0) ==="
+  set test1-resultats []
+  commencer-simulation-it1 1
+end
+
+;; Lance la simulation d'une graine. nb-zombies n'est lu que dans setup : on le remet tout de suite
+;; a sa valeur, le curseur n'est donc jamais laisse a 0.
+to commencer-simulation-it1 [ graine ]
+  let resultats test1-resultats
+  let anciens-zombies nb-zombies
+  random-seed graine
+  set nb-zombies 0
+  setup
+  set nb-zombies anciens-zombies
+  set test1-resultats resultats
+  set test1-graine graine
+  set test1-ticks-sans-point 0
+  set test1-max-dehors 0
+  set test1-invariants-ok? true
+end
+
+;; Un tick et les mesures, dans le meme ordre que evaluer-it1 (memes resultats par graine).
+to mesurer-un-tick-it1
+  go
+  if stock-total-points = 0 [ set test1-ticks-sans-point test1-ticks-sans-point + 1 ]
+  set test1-max-dehors max (list test1-max-dehors max-sorties-par-colonie)
+  if not invariants-ok? [ set test1-invariants-ok? false ]
+end
+
+to enregistrer-simulation-it1
+  let r (list test1-graine test1-invariants-ok? proportion-survivants part-famine
+              (test1-ticks-sans-point / duree-simulation) test1-max-dehors)
+  set test1-resultats lput r test1-resultats
+  afficher-ligne-it1 r
+end
+
+;; Texte du moniteur "Test en cours" de l'interface.
+to-report progression-test
+  let jour floor (ticks / ticks-par-jour)
+  ifelse test1-graine > 0 [
+    report (word "it1 : graine " test1-graine " sur " nb-graines-test ", jour " jour " sur 30")
+  ] [
+    ifelse test2-graine > 0 [
+      report (word "it2 : simulation " test2-graine " sur " (nb-graines-test + 1) ", jour " jour " sur 30")
+    ] [
+      report "aucun"
+    ]
+  ]
 end

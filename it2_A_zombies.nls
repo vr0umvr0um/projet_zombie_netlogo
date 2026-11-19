@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ITERATION 2 - PARTIE A : zombies (cote zombie)
-;; Responsable : (a remplir)
+;; Responsable : Soumia
 ;; Creation, errance, poursuite, attaque au contact. Test : nb-zombies = 20, nb-obstacles = 0.
 ;; Inspirations : Zombieland (Ball), The Walking Dead ABM (Buyukkinaci), Wolf Sheep Predation (Wilensky),
 ;; Predator Prey Game HubNet.
@@ -15,7 +15,7 @@ to setup-zombies
     initialiser-zombie
     move-to one-of candidats
   ]
-  set nb-zombies-initial count zombies
+  ;; nb-zombies-initial est affecte dans setup (fichier principal), apres setup-zombies
 end
 
 ;; Parametres communs a un zombie, utilises par setup-zombies et transformer
