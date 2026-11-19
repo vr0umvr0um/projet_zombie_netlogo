@@ -226,10 +226,25 @@ to afficher-criteres-it1 [ resultats ]
   print "5 et 6 : a verifier a la main (sortie complete, deux consommations documentees)."
 end
 
+;; Message affiche au debut du test (tester-it1 et tester-it1-pas) : ce qui est teste.
+to annoncer-test-it1
+  print "=== Test iteration 1 : environnement / humain (nb-zombies = 0) ==="
+  print (word "Ce test lance " nb-graines-test " simulations de 720 ticks (graines 1 a " nb-graines-test
+    "), sans zombie, avec les autres curseurs tels quels. Il verifie :")
+  print "  1. aucune erreur d'execution sur toutes les graines ;"
+  print "  2. invariants-ok? vrai a chaque tick (stocks positifs, etats valides, aucun humain sur un obstacle, conservation des humains et des zombies) ;"
+  print (word "  3. population stable : survie a 720 ticks dans [" seuil-survie-min " ; " seuil-survie-max
+    "] en moyenne et pour au moins " nb-min-dans-intervalle " simulations sur " nb-graines-test " ;")
+  print (word "  4. famine < " seuil-famine " des humains et tous les points epuises moins de " seuil-points-vides
+    " des ticks, en moyenne et pour au moins " nb-min-dans-intervalle " simulations ;")
+  print "  et affiche le plafond de sorties observe (au plus 1 sortie simultanee par colonie)."
+  print "Non testes ici, a verifier a la main : 5. une sortie complete par colonie ; 6. les deux consommations documentees."
+end
+
 ;; Test d'un seul bloc : nb-graines-test simulations, puis les criteres de sortie.
 ;; Une erreur d'execution pendant le test signifie que le critere 1 n'est pas rempli.
 to tester-it1
-  print "=== Test iteration 1 (nb-zombies = 0) ==="
+  annoncer-test-it1
   let resultats n-values nb-graines-test [ i -> evaluer-it1 (i + 1) ]
   foreach resultats [ r -> afficher-ligne-it1 r ]
   afficher-criteres-it1 resultats
@@ -255,7 +270,7 @@ to tester-it1-pas
 end
 
 to demarrer-test-it1
-  print "=== Test iteration 1 (nb-zombies = 0) ==="
+  annoncer-test-it1
   set test1-resultats []
   commencer-simulation-it1 1
 end

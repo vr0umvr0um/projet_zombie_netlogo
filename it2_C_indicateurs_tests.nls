@@ -223,9 +223,24 @@ to afficher-criteres-it2 [ resultats sans-zombie ]
   print "5. courbes : lancer l'experience BehaviorSpace it2-courbes, puis python analyse/courbes_it2.py."
 end
 
+;; Message affiche au debut du test (tester-it2 et tester-it2-pas) : ce qui est teste.
+to annoncer-test-it2
+  print "=== Test iteration 2 : humain / zombie ==="
+  print "Ce test verifie :"
+  print (word "  1. attaques isolees (" nb-essais-attaque " attaques par cas, un humain et un zombie seuls) : proba-infection = 0 -> aucune infection ;"
+    " proba-defense = 1 -> zombie toujours detruit ; defense 0 et infection 1 -> toujours infecte ;"
+    " defense 0,3 et infection 0,5 -> part d'infectes 0,35 +/- " tolerance-frequence " ;")
+  print (word "  2. issue de l'infection (" nb-essais-attaque " infectes) : rien avant delai-transformation ; tous meurent ou se transforment apres ;"
+    " part de morts = proba-mort-infection +/- " tolerance-frequence " ;")
+  print (word "  3. " nb-graines-test " simulations de 720 ticks (20 zombies, 0 obstacle, graines 1 a " nb-graines-test
+    ") avec invariants-ok? vrai a chaque tick, puis une simulation sans zombie : aucune infection ;")
+  print "  4. aucune erreur d'execution (un agent tue n'agit plus)."
+  print "Non teste ici : 5. courbes humains(t) et zombies(t) (experience it2-courbes et analyse/courbes_it2.py)."
+end
+
 ;; Test d'un seul bloc.
 to tester-it2
-  print "=== Test iteration 2 (humain / zombie) ==="
+  annoncer-test-it2
   afficher-scenarios-it2
   let resultats n-values nb-graines-test [ i -> evaluer-it2 (i + 1) 20 ]
   foreach resultats [ r -> afficher-ligne-it2 r ]
@@ -254,7 +269,7 @@ to tester-it2-pas
 end
 
 to demarrer-test-it2
-  print "=== Test iteration 2 (humain / zombie) ==="
+  annoncer-test-it2
   afficher-scenarios-it2
   set test2-resultats []
   commencer-simulation-it2 1
