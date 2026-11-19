@@ -237,8 +237,8 @@ to afficher-criteres-it1 [ resultats ]
     nb-min-dans-intervalle " simulations sur " nb-graines-test " et en moyenne : " critere-3?
     " (" dans-intervalle " sur " nb-graines-test " dans l'intervalle, moyenne " precision moyenne-survie 3
     ", min " precision min survies 3 ", max " precision max survies 3 ")")
-  ;; Meme logique que le critere 3. Environ 2 % des simulations
-  ;; sortent du seuil par hasard (colonie malchanceuse) ; on exige donc que la moyenne respecte le
+  ;; Meme logique que le critere 3. Avant la reservation du stock (it1_B), environ 2 % des
+  ;; simulations sortaient du seuil (point vide par une autre colonie) ; on exige que la moyenne respecte le
   ;; seuil ET qu'au moins part-min-dans-intervalle des simulations le respectent.
   let sims-famine-ok length filter [ f -> f < seuil-famine ] famines
   let sims-points-ok length filter [ p -> p < seuil-points-vides ] sans-point

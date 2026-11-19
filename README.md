@@ -87,4 +87,5 @@ La figure obtenue est `figures/it2_courbes.png`.
 
 - Les données Covid-19 ne sont pas encore intégrées : calibration et validation restent à faire (itération 5).
 - Les courbes de l'itération 2 décroissent sans oscillation. Une attaque peut maintenant tuer l'humain (`proba-mort-attaque`) et nourrir le zombie (`gain-attaque-zombie`), comme dans *Wolf Sheep Predation* ; mais les zombies meurent presque tous par la défense avant leur durée de vie, si bien que ce gain ne change presque rien, et un humain tué ne devient pas zombie. Le cadre proie-prédateur décrit donc toujours une extinction progressive des zombies.
-- Un critère de l'itération 1 est évalué statistiquement (au moins 18 simulations sur 20) : environ 2 % des simulations connaissent une famine plus forte par pure malchance.
+- Un critère de l'itération 1 est évalué statistiquement (au moins 18 simulations sur 20). Depuis la réservation du stock, aucune des 20 graines ne connaît plus de famine : celle de la graine 8, attribuée à la malchance, venait d'un point vidé par une autre colonie.
+- `proba-defense` (0,125) est un compromis : sur 100 graines, aucune valeur ne garde des zombies dans au moins 50 % des simulations sans éteindre les humains dans plus de 10 % (`analyse/calibration_defense.py`).
