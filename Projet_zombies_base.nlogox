@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <model version="NetLogo 7.0.4" snapToGrid="true">
   <code><![CDATA[;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; SQUELETTE - Projet colonies / zombies (TP5)
-;; Structure et commentaires fournis ; la logique est a ecrire (cf. TODO).
+;; Projet colonies / zombies (TP5) - fichier principal
+;; Iterations 1 (environnement / humain) et 2 (humain / zombie) ecrites et verifiees.
 ;; Question : quelle strategie de ravitaillement influence la
 ;; proportion de survivants apres 30 jours (720 ticks) ?
 ;; Proie-predateur : nourriture = herbe, humains = proies, zombies = predateurs.
@@ -186,6 +186,10 @@ end
       <pen interval="1.0" mode="0" display="zombies" color="-2674135" legend="true">
         <setup></setup>
         <update>plot count zombies</update>
+      </pen>
+      <pen interval="1.0" mode="0" display="infectes" color="-955883" legend="true">
+        <setup></setup>
+        <update>plot nb-infectes</update>
       </pen>
     </plot>
     <plot x="15" autoPlotX="true" yMax="10.0" autoPlotY="true" yAxis="Nourriture" y="850" xMin="0.0" height="190" legend="true" xMax="10.0" yMin="0.0" width="340" xAxis="Temps (ticks)" display="Stocks de nourriture">

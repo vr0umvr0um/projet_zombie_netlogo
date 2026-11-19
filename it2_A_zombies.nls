@@ -37,12 +37,10 @@ to zombie-agir
     die
   ] [
     ;; priorite : attaquer au contact (meme sans poursuite), puis poursuivre, puis errer
-    ifelse any? humains in-radius distance-contact
-      [ zombie-attaquer ]
-      [ ifelse any? humains in-radius portee-detection
-          [ zombie-poursuivre ]
-          [ zombie-errer ]
-      ]
+    (ifelse
+      any? humains in-radius distance-contact  [ zombie-attaquer ]
+      any? humains in-radius portee-detection  [ zombie-poursuivre ]
+      [ zombie-errer ])
   ]
 end
 

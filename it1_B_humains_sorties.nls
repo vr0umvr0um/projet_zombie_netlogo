@@ -66,18 +66,11 @@ end
 ;; Executer une seule action par tick selon la mission.
 to humain-agir
   evoluer-infection
-  
-  ifelse mission = "colonie" [
-    decider-sortie
-  ] [
-    ifelse mission = "aller" [
-      aller-vers-point
-    ] [
-      if mission = "retour" [
-        rentrer-a-la-colonie
-      ]
-    ]
-  ]
+
+  (ifelse
+    mission = "colonie" [ decider-sortie ]
+    mission = "aller"   [ aller-vers-point ]
+    mission = "retour"  [ rentrer-a-la-colonie ])
 end
 
 ;; Verifier si la colonie a besoin de nourriture et peut financer une sortie.
