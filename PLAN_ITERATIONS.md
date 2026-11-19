@@ -57,7 +57,7 @@ Les fichiers des itérations 3 à 5 sont créés au début de chaque itération.
 | B | `it2_B_infection_defense.nls` | côté humain : `detecter-et-defendre`, `infecter`, `evoluer-infection`, `transformer` ; branchement de `evoluer-infection` dans `humain-agir` |
 | C | `it2_C_indicateurs_tests.nls` | infectés, part d'infectés, scénarios unitaires, courbes humains/zombies |
 
-Le code des parties A et B est écrit, assemblé et testé (`tester-it2`, voir `BILAN_IT1_IT2.md`).
+Le code des parties A et B est écrit, assemblé et testé (`tester-it2`, version marquée par le tag `it1-it2`).
 
 **Critères de sortie** :
 1. `proba-infection = 0` : aucune infection. `proba-defense = 1` : aucun humain infecté et zombies détruits. `proba-defense = 0` et `proba-infection = 1` : infection à chaque contact.

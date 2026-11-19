@@ -18,7 +18,7 @@ Ce README explique comment utiliser le dépôt. Le raisonnement scientifique (qu
 | 4 | stratégies de groupe (groupe fixe, groupe adaptatif) | à faire |
 | 5 | sensibilité, calibration, validation, rapport | à faire |
 
-Le détail des critères de sortie est dans [PLAN_ITERATIONS.md](PLAN_ITERATIONS.md), et les décisions de réglage, avec leurs preuves chiffrées, dans [DECISIONS_IT1.md](DECISIONS_IT1.md).
+Le détail des critères de sortie est dans [PLAN_ITERATIONS.md](PLAN_ITERATIONS.md), et les décisions de réglage (D1 à D11) dans `DECISIONS_IT1.md`, retiré du dépôt (voir « Documents retirés » plus bas).
 
 ## Prérequis
 
@@ -32,7 +32,7 @@ Le détail des critères de sortie est dans [PLAN_ITERATIONS.md](PLAN_ITERATIONS
 3. Le curseur `delai-tick` règle la vitesse : pause en secondes après chaque tick (0,05 par défaut, soit environ 40 secondes pour les 30 jours ; 0 pour la vitesse maximale). Le curseur de vitesse de NetLogo, en haut de la fenêtre, agit aussi sur l'affichage. Le moniteur « Temps simulé » indique le jour et l'heure.
 4. Les autres curseurs règlent les paramètres ; le sélecteur `strategie` est prévu pour l'itération 4.
 
-Réglages par défaut retenus (justification dans `DECISIONS_IT1.md`) :
+Réglages par défaut retenus (justification dans `DECISIONS_IT1.md`, voir « Documents retirés ») :
 
 | Paramètre | Valeur | Paramètre | Valeur |
 |---|---|---|---|
@@ -94,6 +94,17 @@ git reset --hard origin/iteration1-iteration2
 ```
 
 Attention : `reset --hard` efface les modifications locales non poussées. Sauvegardez-les d'abord (`git branch ma-sauvegarde`).
+
+## Documents retirés
+
+`DECISIONS_IT1.md` (décisions D1 à D11 et les mesures qui les justifient) et `BILAN_IT1_IT2.md` (bilan d'assemblage des itérations 1 et 2) ont été retirés du dépôt après avoir été résumés dans le groupe. Ils restent consultables dans l'historique, à la version du tag `it1-it2` :
+
+```bash
+git show it1-it2:DECISIONS_IT1.md
+git show it1-it2:BILAN_IT1_IT2.md
+```
+
+Les commentaires du code qui citent `DECISIONS_IT1.md` renvoient à ce document.
 
 ## Limites connues
 
