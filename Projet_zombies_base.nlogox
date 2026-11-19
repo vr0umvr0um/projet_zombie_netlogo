@@ -1140,6 +1140,25 @@ setup</setup>
         </enumeratedValueSet>
       </constants>
     </experiment>
+    <experiment name="it2-calibration-defense" repetitions="100" sequentialRunOrder="true" runMetricsEveryStep="false" timeLimit="720">
+      <setup>random-seed (((behaviorspace-run-number - 1) mod 100) + 1)
+setup</setup>
+      <go>go</go>
+      <metrics>
+        <metric>count humains</metric>
+        <metric>count zombies</metric>
+        <metric>invariants-ok?</metric>
+      </metrics>
+      <constants>
+        <enumeratedValueSet variable="nb-zombies">
+          <value value="20"></value>
+        </enumeratedValueSet>
+        <enumeratedValueSet variable="nb-obstacles">
+          <value value="0"></value>
+        </enumeratedValueSet>
+        <steppedValueSet variable="proba-defense" first="0.1" step="0.005" last="0.14"></steppedValueSet>
+      </constants>
+    </experiment>
   </experiments>
   <previewCommands>setup repeat 75 [ go ]</previewCommands>
 </model>
