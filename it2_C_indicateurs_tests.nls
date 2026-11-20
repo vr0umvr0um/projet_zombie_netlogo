@@ -80,14 +80,20 @@ to-report age-test-zombie
 end
 
 ;; Une attaque isolee : un humain sain et un zombie (age age-test-zombie) sur le meme patch.
+;; L'humain est en sortie (mission "aller") : un humain a la colonie est a l'abri (proies-visibles, it2_A).
 ;; Renvoie [ issue  age-du-zombie-apres ] ; issue = "defense" (zombie detruit), "tue" (humain
 ;; tue par le zombie), "infecte" ou "indemne" ; age -1 si le zombie a ete detruit.
 to-report resultat-attaque
+  report resultat-attaque-sur "aller"
+end
+
+;; Meme attaque isolee, l'humain ayant la mission m ("aller", "retour" ou "colonie").
+to-report resultat-attaque-sur [ m ]
   let h nobody
   let z nobody
   create-humains 1 [
     set etat "sain"
-    set mission "colonie"
+    set mission m
     move-to patch 0 0
     set h self
   ]
@@ -122,6 +128,11 @@ end
 ;; puis la liste des ages des zombies apres les attaques ou l'humain a ete tue.
 ;; Les curseurs proba-defense, proba-mort-attaque et proba-infection sont restaures ensuite.
 to-report frequences-attaque [ n p-defense p-mort p-infection ]
+  report frequences-attaque-sur "aller" n p-defense p-mort p-infection
+end
+
+;; Meme calcul, l'humain attaque ayant la mission m.
+to-report frequences-attaque-sur [ m n p-defense p-mort p-infection ]
   let ancienne-defense proba-defense
   let ancienne-mort proba-mort-attaque
   let ancienne-infection proba-infection
@@ -129,7 +140,7 @@ to-report frequences-attaque [ n p-defense p-mort p-infection ]
   set proba-mort-attaque p-mort
   set proba-infection p-infection
 
-  let res n-values n [ resultat-attaque ]
+  let res n-values n [ resultat-attaque-sur m ]
 
   set proba-defense ancienne-defense
   set proba-mort-attaque ancienne-mort
@@ -223,6 +234,8 @@ to afficher-scenarios-it2
   let f-mort-sure frequences-attaque n 0 1 1
   random-seed graine-scenarios
   let f-mixte frequences-attaque n 0.3 0.2 0.5
+  random-seed graine-scenarios
+  let f-colonie frequences-attaque-sur "colonie" n 0 1 1
   let age-attendu max (list 0 (age-test-zombie - gain-attaque-zombie))
   let ages-repas remove-duplicates item 4 f-mort-sure
   print "--- Critere 1 : attaques isolees ---"
@@ -237,6 +250,8 @@ to afficher-scenarios-it2
   print (word "defense 0.3, mort 0.2, infection 0.5 -> defenses " precision item 0 f-mixte 3 " (attendu 0.3), tues "
     precision item 3 f-mixte 3 " (attendu 0.14), infectes " precision item 1 f-mixte 3 " (attendu 0.28), tolerance " tol " : "
     (abs (item 0 f-mixte - 0.3) <= tol and abs (item 3 f-mixte - 0.14) <= tol and abs (item 1 f-mixte - 0.28) <= tol))
+  print (word "humain a la colonie, defense 0, mort 1, infection 1 -> indemnes : " item 2 f-colonie " (attendu 1, la colonie protege) : "
+    (item 2 f-colonie = 1))
 
   ;; --- critere 2 : issue de l'infection ---
   preparer-test
@@ -274,10 +289,11 @@ end
 to annoncer-test-it2
   print "=== Test iteration 2 : humain / zombie ==="
   print "Ce test verifie :"
-  print (word "  1. attaques isolees (" nb-essais-attaque " attaques par cas, un humain et un zombie seuls, graine " graine-scenarios ") :"
+  print (word "  1. attaques isolees (" nb-essais-attaque " attaques par cas, un humain en sortie et un zombie seuls, graine " graine-scenarios ") :"
     " sans defense, mort ni infection -> humain indemne ; defense 1 -> zombie toujours detruit ;"
     " infection 1 (sans defense ni mort) -> toujours infecte ; mort 1 -> humain toujours tue et le zombie se nourrit"
-    " (son age recule de gain-attaque-zombie) ; defense 0,3, mort 0,2, infection 0,5 -> 0,3 / 0,14 / 0,28 +/- " tolerance-frequence " ;")
+    " (son age recule de gain-attaque-zombie) ; defense 0,3, mort 0,2, infection 0,5 -> 0,3 / 0,14 / 0,28 +/- " tolerance-frequence " ;"
+    " humain a la colonie -> jamais attaque (la colonie protege ses habitants) ;")
   print (word "  2. issue de l'infection (" nb-essais-attaque " infectes, graine " graine-scenarios ") : rien avant delai-transformation ; tous meurent ou se transforment apres ;"
     " part de morts = proba-mort-infection +/- " tolerance-frequence " ;")
   print (word "  3. " nb-graines-test " simulations de 720 ticks (20 zombies, 0 obstacle, graines 1 a " nb-graines-test

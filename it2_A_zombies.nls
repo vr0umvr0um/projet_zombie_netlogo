@@ -2,6 +2,8 @@
 ;; ITERATION 2 - PARTIE A : zombies (cote zombie)
 ;; Responsable : Soumia
 ;; Creation, errance, poursuite, attaque au contact. Test : nb-zombies = 20, nb-obstacles = 0.
+;; La colonie protege ses habitants : un zombie ne voit et n'attaque que les humains en sortie
+;; (proies-visibles), comme le prevoit le TP5 (defense "pendant le deplacement de l'humain").
 ;; Inspirations : Zombieland (Ball), The Walking Dead ABM (Buyukkinaci), Wolf Sheep Predation (Wilensky),
 ;; Predator Prey Game HubNet.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -38,8 +40,8 @@ to zombie-agir
   ] [
     ;; priorite : attaquer au contact (meme sans poursuite), puis poursuivre, puis errer
     (ifelse
-      any? humains in-radius distance-contact  [ zombie-attaquer ]
-      any? humains in-radius portee-detection  [ zombie-poursuivre ]
+      any? proies-visibles distance-contact  [ zombie-attaquer ]
+      any? proies-visibles portee-detection  [ zombie-poursuivre ]
       [ zombie-errer ])
   ]
 end
@@ -53,16 +55,27 @@ end
 
 ;; Se rapproche de l'humain le plus proche dans son rayon de detection
 to zombie-poursuivre
-  let cible min-one-of humains in-radius portee-detection [ distance myself ]
+  let cible min-one-of proies-visibles portee-detection [ distance myself ]
   face cible
   avancer-zombie
 end
 
-;; Attaque un humain tire au hasard parmi ceux au contact (one-of, comme Wolf Sheep Predation)
+;; Attaque un humain tire au hasard parmi ceux au contact (one-of, comme Wolf Sheep Predation).
+;; Sans proie visible au contact (humain a la colonie), il ne se passe rien.
 to zombie-attaquer
-  let cible one-of humains in-radius distance-contact
+  let cible one-of proies-visibles distance-contact
   let attaquant self
-  ask cible [ detecter-et-defendre attaquant ]
+  if cible != nobody [ ask cible [ detecter-et-defendre attaquant ] ]
+end
+
+;; Humains qu'un zombie peut voir et attaquer dans ce rayon : seulement ceux en sortie
+;; (mission "aller" ou "retour"). Les humains a la colonie (mission "colonie", caches) sont a
+;; l'abri : sans cette regle, 99 % des attaques visaient des humains dans leur colonie (mesure sur
+;; 100 graines) et la strategie de ravitaillement n'avait presque plus d'effet sur le risque.
+;; Un infecte qui rentre peut encore se transformer a la colonie : le zombie apparait sur place,
+;; puis ne s'en prend qu'aux humains qui sortent.
+to-report proies-visibles [ rayon ]
+  report (humains in-radius rayon) with [ mission != "colonie" ]
 end
 
 ;; Predation (appelee par detecter-et-defendre, it2_B, quand l'humain attaque est tue) : comme le
