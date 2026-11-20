@@ -172,13 +172,6 @@ to decider-sortie
   set hidden? false   ;; visible pendant la sortie
 end
 
-;; Renvoyer le point au bout du trajet, ou nobody si aucun trajet n'existe.
-to-report choisir-point
-  let trajet chemin-vers-ravitaillement
-  if empty? trajet [ report nobody ]
-  report last trajet
-end
-
 ;; Trouver le point approvisionne le plus proche en nombre de pas.
 to-report chemin-vers-ravitaillement
   let depart patch-here
