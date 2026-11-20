@@ -1,0 +1,24 @@
+# Reference de non-regression pour tester-it1 (nb-zombies = 0, 20 graines).
+# Base corrigee des iterations 1 et 2 (reservation du stock, sorties rentables, colonie protegee).
+# Sans zombie, le code des iterations suivantes ne doit rien changer : apres vos modifications, relancez
+# tester-it1 et comparez ces 20 lignes (elles doivent etre identiques).
+graine 1 | invariants true | survie 1.03 | famine 0 | sans point 0 | max sorties/colonie 1
+graine 2 | invariants true | survie 1 | famine 0 | sans point 0 | max sorties/colonie 1
+graine 3 | invariants true | survie 1.02 | famine 0 | sans point 0 | max sorties/colonie 1
+graine 4 | invariants true | survie 1 | famine 0 | sans point 0 | max sorties/colonie 1
+graine 5 | invariants true | survie 1 | famine 0 | sans point 0 | max sorties/colonie 1
+graine 6 | invariants true | survie 1.01 | famine 0 | sans point 0 | max sorties/colonie 1
+graine 7 | invariants true | survie 1.01 | famine 0 | sans point 0 | max sorties/colonie 1
+graine 8 | invariants true | survie 1.01 | famine 0 | sans point 0 | max sorties/colonie 1
+graine 9 | invariants true | survie 1.02 | famine 0 | sans point 0 | max sorties/colonie 1
+graine 10 | invariants true | survie 1 | famine 0 | sans point 0 | max sorties/colonie 1
+graine 11 | invariants true | survie 1.01 | famine 0 | sans point 0 | max sorties/colonie 1
+graine 12 | invariants true | survie 1.01 | famine 0 | sans point 0 | max sorties/colonie 1
+graine 13 | invariants true | survie 1 | famine 0 | sans point 0 | max sorties/colonie 1
+graine 14 | invariants true | survie 1 | famine 0 | sans point 0 | max sorties/colonie 1
+graine 15 | invariants true | survie 1.01 | famine 0 | sans point 0 | max sorties/colonie 1
+graine 16 | invariants true | survie 1 | famine 0 | sans point 0 | max sorties/colonie 1
+graine 17 | invariants true | survie 1.01 | famine 0 | sans point 0 | max sorties/colonie 1
+graine 18 | invariants true | survie 1 | famine 0 | sans point 0 | max sorties/colonie 1
+graine 19 | invariants true | survie 1 | famine 0 | sans point 0 | max sorties/colonie 1
+graine 20 | invariants true | survie 1 | famine 0 | sans point 0 | max sorties/colonie 1

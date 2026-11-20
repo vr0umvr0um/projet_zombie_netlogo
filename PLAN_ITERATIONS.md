@@ -60,7 +60,7 @@ Les fichiers des itérations 3 à 5 sont créés au début de chaque itération.
 Le code des parties A et B est écrit, assemblé et testé (`tester-it2`).
 
 **Critères de sortie** :
-1. `proba-infection = 0` : aucune infection. `proba-defense = 1` : aucun humain infecté et zombies détruits. `proba-defense = 0` et `proba-infection = 1` : infection à chaque contact. Prédation : `proba-mort-attaque = 1` (sans défense) : humain tué à chaque contact et zombie nourri (son âge recule de `gain-attaque-zombie`). Chaque scénario part d'une graine fixe.
+1. `proba-infection = 0` : aucune infection. `proba-defense = 1` : aucun humain infecté et zombies détruits. `proba-defense = 0` et `proba-infection = 1` : infection à chaque contact. Prédation : `proba-mort-attaque = 1` (sans défense) : humain tué à chaque contact et zombie nourri (son âge recule de `gain-attaque-zombie`). Un humain à la colonie n'est jamais attaqué (la colonie protège ses habitants). Chaque scénario part d'une graine fixe.
 2. Un infecté meurt ou se transforme après `delai-transformation` ; la part qui meurt est proche de `proba-mort-infection` (20 graines).
 3. `invariants-ok?` est vrai ; avec `nb-zombies = 0`, aucune infection (retour à l'état de l'itération 1).
 4. Un agent tué n'agit plus ensuite, sans erreur d'exécution.
@@ -68,7 +68,7 @@ Le code des parties A et B est écrit, assemblé et testé (`tester-it2`).
 
 ## Itération 3 - environnement / zombie
 
-**Réglages de test** : `nb-obstacles` normal, tous les agents présents.
+**Réglages de test** : `nb-obstacles` normal, tous les agents présents. `proba-defense = 0,125` a été recalibrée avec 0 et 30 obstacles (`it2-calibration-defense`) ; `analyse/validation_reglages.py` donne l'effet de chaque curseur, dont `portee-detection` et `duree-vie-zombie`, à reprendre pour la partie B.
 
 | Partie | Contenu prévu |
 |---|---|
@@ -122,5 +122,6 @@ Indépendante du code, à avancer dès l'itération 1 par la personne la plus li
 - `initialiser-humain [ maison ]` : variables d'un nouvel humain (fichier B de l'itération 1), utilisée par `setup-humains` et `reproduire`.
 - `actualiser-affichage-colonies` : étiquette et couleur des colonies, affichage seulement (fichier A de l'itération 1).
 - `infecter`, `transformer` : procédures d'humain (itération 2).
-- `choisir-point` : renvoie un patch de ravitaillement avec un stock > 0, ou `nobody`.
+- `chemin-vers-ravitaillement` : renvoie le trajet (liste de patches, départ inclus) vers le point rentable le plus proche, ou `[]` (fichier B de l'itération 1).
+- `proies-visibles [ rayon ]` : humains qu'un zombie peut voir et attaquer, seulement ceux en sortie (fichier A de l'itération 2). Toute nouvelle règle de détection (itérations 3 et 4) passe par ce reporter.
 - `invariants-ok?` : booléen ; il doit rester valide à chaque itération.
