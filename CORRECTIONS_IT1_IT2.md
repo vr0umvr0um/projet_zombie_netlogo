@@ -88,7 +88,7 @@ Chaque point de l'ancienne liste « À vérifier » a été relu dans le code, p
 **Les deux**
 - [x] Total des étiquettes = moniteur « Humains vivants » (voir plus haut).
 - [x] « Test it1 » et « Test it2 » relancés (sans interface) : résultats ci-dessus.
-- [ ] Ouvrir le modèle dans l'interface, `setup` puis `go` avec 20 et 100 humains, et regarder la carte : **à faire par l'équipe** (impossible à vérifier sans interface).
+- [x] Carte avec 20 et 100 humains (graine 3, 300 ticks, rendu par `export-view` sans interface) : à chaque tick, la somme des étiquettes est égale au nombre d'humains vivants, et un humain est caché si et seulement s'il est à la colonie. Sur l'image : étiquettes « 25 h / 101 », maisons bleu foncé sous `s-min`, un humain en sortie visible près d'un point vidé (noir), zombies violets. Seul défaut : l'étiquette d'une colonie placée dans un coin de la carte est en partie coupée. Les boutons eux-mêmes restent à essayer dans l'interface.
 
 ## Reste à faire ou à décider
 
