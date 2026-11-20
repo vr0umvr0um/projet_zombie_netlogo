@@ -224,7 +224,8 @@ Quelle strategie de ravitaillement (individuelle, groupe fixe, groupe adaptatif)
 ## Lecture de la carte
 
 - Maison : colonie. Etiquette : nombre d'humains de la colonie (presents et en sortie), infectes entre parentheses, puis stock. Bleu quand le stock atteint s-min, bleu fonce en dessous, noir a zero, gris sans habitant.
-- Les humains presents a la colonie sont caches (ils sont comptes dans l'etiquette) ; seuls les humains en sortie sont visibles : bleu ciel (sains), orange (infectes).
+- Les humains presents a la colonie sont caches (ils sont comptes dans l'etiquette) ; seuls les humains en sortie sont visibles : bleu ciel (sains), orange (infectes). La somme des etiquettes est egale au moniteur "Humains vivants".
+- La colonie protege ses habitants : un zombie ne voit et n'attaque que les humains en sortie (TP5 : l'humain se defend pendant son deplacement).
 - Zombies : violet, meme taille que les humains.
 - Patches : vert (ravitaillement, plus sombre quand le stock baisse, noir vide), gris (obstacle).
 
@@ -1155,8 +1156,9 @@ setup</setup>
         </enumeratedValueSet>
         <enumeratedValueSet variable="nb-obstacles">
           <value value="0"></value>
+          <value value="30"></value>
         </enumeratedValueSet>
-        <steppedValueSet variable="proba-defense" first="0.1" step="0.005" last="0.14"></steppedValueSet>
+        <steppedValueSet variable="proba-defense" first="0" step="0.025" last="0.5"></steppedValueSet>
       </constants>
     </experiment>
   </experiments>
