@@ -59,6 +59,7 @@ patches-own [
   stock-point              ;; nourriture disponible (points de ravitaillement)
   stock-max-point          ;; stock de depart, borne de la regeneration lente
   stock-reserve            ;; part du stock reservee par les humains en route vers ce point (it1_B)
+  passages-zombies         ;; carte de densite : zombies cumules sur ce patch depuis setup (it3_C)
 ]
 
 colonies-own [
@@ -80,6 +81,8 @@ humains-own [
 
 zombies-own [
   age-zombie               ;; ticks depuis la transformation, compare a duree-vie-zombie
+  position-ancre           ;; (list xcor ycor) d'ou le zombie n'est pas sorti, 0 avant la premiere mesure (it3_C)
+  ticks-sans-bouger        ;; ticks passes pres de position-ancre sans proie au contact (it3_C, zombie-immobile?)
 ]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -121,6 +124,7 @@ to go
   regenerer-points
   ask humains [ humain-agir ]
   ask zombies [ zombie-agir ]
+  mesurer-zombies-it3             ;; mesures seulement, sans tirage aleatoire (it3_C)
   if (ticks mod ticks-par-jour) = 0 [ evenements-journaliers ]
   actualiser-affichage-colonies   ;; affichage seulement (it1_A)
 
@@ -144,9 +148,12 @@ end
     <button x="10" y="70" height="40" disableUntilTicks="false" forever="true" kind="Observer" width="101" display="Simulation">go-visuel</button>
     <button x="10" y="475" height="35" disableUntilTicks="false" forever="true" kind="Observer" width="100" display="Test it1">tester-it1-pas</button>
     <button x="115" y="475" height="35" disableUntilTicks="false" forever="true" kind="Observer" width="100" display="Test it2">tester-it2-pas</button>
+    <button x="220" y="475" height="35" disableUntilTicks="false" forever="true" kind="Observer" width="100" display="Test it3">tester-it3-pas</button>
     <slider x="815" step="0.01" y="20" max="1" width="250" display="delai-tick" height="50" min="0" direction="Horizontal" default="0.05" variable="delai-tick" units="s"></slider>
     <monitor x="815" precision="0" y="80" height="60" fontSize="11" width="250" display="Temps simulé">(word "jour " floor (ticks / ticks-par-jour) " , heure " (ticks mod ticks-par-jour))</monitor>
     <monitor x="815" precision="0" y="150" height="60" fontSize="11" width="250" display="Test en cours">progression-test</monitor>
+    <monitor x="815" precision="0" y="220" height="60" fontSize="11" width="120" display="Zombies immobiles">nb-zombies-immobiles</monitor>
+    <monitor x="945" precision="0" y="220" height="60" fontSize="11" width="120" display="Zombies sur obstacle">nb-zombies-sur-obstacle</monitor>
     <chooser x="10" y="120" height="60" variable="strategie" current="0" width="150" display="strategie">
       <choice type="string" value="individuelle"></choice>
       <choice type="string" value="groupe fixe"></choice>
@@ -1162,6 +1169,43 @@ setup</setup>
           <value value="30"></value>
         </enumeratedValueSet>
         <steppedValueSet variable="proba-defense" first="0" step="0.025" last="0.5"></steppedValueSet>
+      </constants>
+    </experiment>
+    <experiment name="it3-courbes" repetitions="20" sequentialRunOrder="true" runMetricsEveryStep="true" timeLimit="720">
+      <setup>random-seed behaviorspace-run-number
+setup</setup>
+      <go>go</go>
+      <metrics>
+        <metric>count humains</metric>
+        <metric>count zombies</metric>
+        <metric>nb-zombies-immobiles</metric>
+        <metric>nb-zombies-sur-obstacle</metric>
+        <metric>invariants-ok?</metric>
+      </metrics>
+      <constants>
+        <enumeratedValueSet variable="nb-zombies">
+          <value value="20"></value>
+        </enumeratedValueSet>
+        <enumeratedValueSet variable="nb-obstacles">
+          <value value="30"></value>
+        </enumeratedValueSet>
+      </constants>
+    </experiment>
+    <experiment name="it3-densite" repetitions="20" sequentialRunOrder="true" runMetricsEveryStep="false" timeLimit="720">
+      <setup>random-seed behaviorspace-run-number
+setup</setup>
+      <go>go</go>
+      <metrics>
+        <metric>carte-densite-zombies</metric>
+        <metric>carte-types</metric>
+      </metrics>
+      <constants>
+        <enumeratedValueSet variable="nb-zombies">
+          <value value="20"></value>
+        </enumeratedValueSet>
+        <enumeratedValueSet variable="nb-obstacles">
+          <value value="30"></value>
+        </enumeratedValueSet>
       </constants>
     </experiment>
   </experiments>

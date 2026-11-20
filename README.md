@@ -14,7 +14,7 @@ Ce README explique comment utiliser le dépôt. Le raisonnement scientifique (qu
 |---|---|---|
 | 1 | environnement / humain (colonies, nourriture, sorties individuelles, reproduction) | terminée : critères 1 à 6 vérifiés |
 | 2 | humain / zombie (attaque, défense, infection, transformation) | terminée : critères 1 à 4 vérifiés, courbes tracées |
-| 3 | environnement / zombie (obstacles et bords) | squelette prêt, logique à écrire (répartition dans `REPARTITION_IT3.md`) |
+| 3 | environnement / zombie (obstacles et bords) | partie C faite (`tester-it3`, indicateurs, carte de densité) ; parties A et B à écrire (`REPARTITION_IT3.md`) |
 | 4 | stratégies de groupe (groupe fixe, groupe adaptatif) | à faire |
 | 5 | sensibilité, calibration, validation, rapport | à faire |
 
@@ -60,7 +60,7 @@ Un fichier par partie (A, B, C) et par itération, inclus dans le fichier princi
 | `it2_C_indicateurs_tests.nls` | indicateurs d'infection, scénarios unitaires, `tester-it2` |
 | `it3_A_zombies_obstacles.nls` | squelette : déplacement des zombies autour des obstacles et des bords |
 | `it3_B_zombies_parametres.nls` | squelette : vitesse, portée et durée de vie des zombies |
-| `it3_C_indicateurs_tests.nls` | squelette : indicateurs spatiaux, invariants, `tester-it3` |
+| `it3_C_indicateurs_tests.nls` | zombies immobiles et sur obstacle, invariants des zombies, carte de densité, `tester-it3` |
 | `analyse/` | scripts Python d'analyse |
 | `results/` | CSV produits par BehaviorSpace |
 | `figures/` | figures produites par les scripts |
@@ -69,11 +69,12 @@ Les variables communes (`globals`, `*-own`) sont dans le fichier principal : tou
 
 ## Tests et expériences
 
-- **Boutons « Test it1 » et « Test it2 »** (procédures `tester-it1-pas` et `tester-it2-pas`) : lancent 20 graines et affichent les critères de sortie dans le Centre de commandes (comptez quelques minutes chacun). Ce sont des boutons « forever » : **recliquer dessus arrête le test**, le relancer le reprend, et « setup » l'annule. Le moniteur « Test en cours » indique la graine et le jour. Les procédures `tester-it1` et `tester-it2` font la même chose d'un seul bloc, sans interruption possible : elles servent à la ligne de commande.
+- **Boutons « Test it1 », « Test it2 » et « Test it3 »** (procédures `tester-it1-pas`, `tester-it2-pas` et `tester-it3-pas`) : lancent 20 graines et affichent les critères de sortie dans le Centre de commandes (comptez quelques minutes chacun). Ce sont des boutons « forever » : **recliquer dessus arrête le test**, le relancer le reprend, et « setup » l'annule. Le moniteur « Test en cours » indique la graine et le jour. Les procédures `tester-it1` et `tester-it2` font la même chose d'un seul bloc, sans interruption possible : elles servent à la ligne de commande.
 - **`invariants-ok?`** : vrai si les stocks sont positifs, les états valides, les humains et les zombies conservés, et aucune infection n'apparaît sans zombie. `liste-invariants-violes` dit lequel échoue.
 - **Expériences BehaviorSpace** : `it1-stabilite`, `it1-reglage-taux-naissance`, `it2-courbes`, `it2-calibration-defense` (`proba-defense` de 0 à 0,5, sans obstacle et avec 30 obstacles, 100 graines par valeur ; analyse : `python analyse/calibration_defense.py`, figure `figures/it2_calibration_defense.png`).
 - **Validation des réglages** : `python analyse/validation_reglages.py --lancer` balaie chaque curseur seul autour de sa valeur par défaut (100 graines par valeur, modèle complet et sans zombie, invariants vérifiés à chaque tick), puis écrit la synthèse dans `results/validation_reglages.csv`. Sans `--lancer`, il refait seulement la synthèse à partir des tables de `results/validation_reglages/` (non versionnées).
-- **Non-régression** : sans zombie, `tester-it1` doit redonner exactement les 20 lignes de `results/reference_tester_it1.txt`.
+- **Non-régression** : sans zombie, `tester-it1` doit redonner exactement les 20 lignes de `results/reference_tester_it1.txt` ; `tester-it3` le vérifie automatiquement.
+- **Itération 3** : expériences `it3-courbes` et `it3-densite`, puis `python analyse/carte_densite_it3.py` (figures `figures/it3_courbes.png` et `figures/it3_carte_densite.png`).
 - **Reproductibilité** : chaque test et chaque expérience fixe sa graine. `tester-it1` et les simulations de `tester-it2` utilisent les graines 1 à 20, les scénarios d'attaque et d'infection de `tester-it2` repartent de `graine-scenarios` (1), et les expériences BehaviorSpace utilisent le numéro de simulation (`random-seed behaviorspace-run-number`). Deux lancements donnent exactement la même sortie.
 
 Lancer une expérience sans interface (exemple pour `it2-courbes`, depuis ce dossier) :

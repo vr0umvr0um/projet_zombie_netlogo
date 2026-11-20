@@ -4,52 +4,354 @@
 ;; Indicateurs spatiaux, invariants des zombies dans l'environnement, test de l'iteration.
 ;; Reglages de test : nb-obstacles = 30 (valeur par defaut), nb-zombies = 20, tous les agents presents.
 ;;
-;; Mode d'emploi vise : bouton "Test it3" (procedure tester-it3) et experience BehaviorSpace
-;; it3-courbes, sur le modele des fichiers it1_C et it2_C.
+;; Mode d'emploi :
+;;  - bouton "Test it3" (procedure tester-it3-pas, bouton "forever") : 20 graines du modele complet,
+;;    puis la non-regression de l'iteration 1 ; tableau et verdict dans le Centre de commandes.
+;;    Recliquer sur le bouton arrete le test ; tester-it3 fait la meme chose d'un seul bloc ;
+;;  - BehaviorSpace it3-courbes (zombies, immobiles, au fil du temps) et it3-densite (carte de
+;;    densite des zombies a 720 ticks), puis python analyse/carte_densite_it3.py.
 ;;
 ;; Critere de sortie vise : aucun zombie sur un obstacle ni hors carte ; moins de 5 % de zombies
 ;; immobiles ; 20 graines du modele complet sans erreur ; courbes tracees.
+;;
+;; REPRODUCTIBILITE : mesurer-zombies-it3 est appele a chaque tick par go. Il ne consomme aucun
+;; tirage aleatoire (foreach sort et ask sur un seul agent, pas de "ask zombies" ni de "of" sur un
+;; ensemble) : les resultats de tester-it1 et tester-it2 ne changent pas.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Declaration de variables : elle doit preceder les procedures (voir it1_C).
+;; Etat du test pas a pas ; clear-all (dans setup) les remet a 0 : commencer-simulation-it3 les
+;; sauvegarde et les restaure autour de setup.
+globals [
+  test3-graine             ;; 0 = pas de test ; 1 a nb-graines-test : simulation en cours
+  test3-resultats          ;; resultats des simulations terminees
+  test3-invariants-ok?
+  test3-somme-part-immobiles  ;; somme, sur les ticks, de part-zombies-immobiles
+  test3-ticks-avec-zombies    ;; ticks ou il reste au moins un zombie
+  test3-max-part-immobiles
+  test3-max-sur-obstacle
+]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Seuils (a justifier dans le rapport)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Un zombie est "immobile" s'il est reste a moins de rayon-immobile patch d'un meme point pendant
+;; seuil-immobile ticks, sans proie au contact (un zombie qui attaque reste sur place, ce n'est pas
+;; un blocage). Proposition de REPARTITION_IT3.md (position inchangee depuis 24 ticks = 1 jour),
+;; elargie a un rayon d'un patch : un zombie coince qui tourne et avance de 0,5 dans sa case, ou
+;; qui fait des allers-retours entre deux cases, est compte. Un zombie qui erre (0,5 patch par
+;; tick, petits virages) sort de ce rayon en 2 ou 3 ticks. A confirmer avec la partie A.
+to-report seuil-immobile
+  report 24
+end
+
+to-report rayon-immobile
+  report 1
+end
+
+to-report seuil-part-immobiles   ;; part maximale de zombies immobiles (critere de sortie)
+  report 0.05
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Mesures a chaque tick (appelees par go, fichier principal)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Apres la phase des zombies : immobilite de chaque zombie et passages sur la carte de densite.
+to mesurer-zombies-it3
+  foreach sort zombies [ z ->
+    ask z [
+      ;; position-ancre vaut 0 pour un zombie qui vient d'apparaitre : premiere mesure
+      ifelse is-list? position-ancre
+             and distancexy (item 0 position-ancre) (item 1 position-ancre) < rayon-immobile
+             and not any? proies-visibles distance-contact [
+        set ticks-sans-bouger ticks-sans-bouger + 1
+      ] [
+        ;; il a quitte le rayon (ou il attaque) : nouvelle ancre a sa position
+        set position-ancre (list xcor ycor)
+        set ticks-sans-bouger 0
+      ]
+      ask patch-here [ set passages-zombies passages-zombies + 1 ]
+    ]
+  ]
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Indicateurs
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Vrai si ce zombie est reste pres d'un meme point depuis seuil-immobile ticks sans proie au contact.
+;; La partie A peut s'en servir pour zombie-bloque? (it3_A).
+to-report zombie-immobile?
+  report ticks-sans-bouger >= seuil-immobile
+end
 
 ;; Nombre de zombies sur un obstacle : doit toujours valoir 0.
 to-report nb-zombies-sur-obstacle
-  ;; TODO : compter les zombies dont le patch courant est de type "obstacle".
-  report 0
+  report count zombies with [ [ type-patch ] of patch-here = "obstacle" ]
 end
 
-;; Nombre de zombies immobiles (voir zombie-bloque?, it3_A).
+;; Nombre de zombies hors de la carte : doit toujours valoir 0 (le monde n'est pas torique).
+to-report nb-zombies-hors-carte
+  report count zombies with [
+    xcor < min-pxcor - 0.5 or xcor >= max-pxcor + 0.5 or
+    ycor < min-pycor - 0.5 or ycor >= max-pycor + 0.5 ]
+end
+
+;; Nombre de zombies immobiles (voir zombie-immobile?).
 to-report nb-zombies-immobiles
-  ;; TODO : compter les zombies pour lesquels zombie-bloque? est vrai.
-  report 0
+  report count zombies with [ zombie-immobile? ]
 end
 
-;; Part des zombies immobiles, entre 0 et 1.
+;; Part des zombies immobiles, entre 0 et 1 (0 s'il n'y a plus de zombie).
 to-report part-zombies-immobiles
-  ;; TODO : nb-zombies-immobiles / count zombies (0 s'il n'y a plus de zombie).
-  report 0
+  ifelse any? zombies
+    [ report nb-zombies-immobiles / count zombies ]
+    [ report 0 ]
 end
 
-;; Carte de densite : nombre de zombies cumule par patch sur la simulation (pour une figure).
+;; Carte de densite : nombre de zombies cumule sur ce patch depuis setup (un passage par zombie
+;; et par tick). passages-zombies est une variable de patch du fichier principal.
 to-report densite-zombies [ un-patch ]
-  ;; TODO : decider comment cumuler (variable de patch a declarer dans le fichier principal,
-  ;;        incrementee a chaque tick) et comment l'exporter vers Python.
-  report 0
+  report [ passages-zombies ] of un-patch
 end
 
-;; Invariants propres a l'iteration 3 ; a brancher dans liste-invariants-violes (it1_C) :
-;;   - aucun zombie sur un obstacle ;
-;;   - aucun zombie hors de la carte.
+;; Export pour Python (experience it3-densite) : les patches dans l'ordre de sort patches,
+;; c'est-a-dire ligne par ligne, de haut (max-pycor) en bas, et de gauche a droite.
+to-report carte-densite-zombies
+  report map [ p -> densite-zombies p ] sort patches
+end
+
+;; Meme ordre : 0 vide, 1 obstacle, 2 point de ravitaillement, 3 colonie.
+to-report carte-types
+  report map [ p -> [ (ifelse-value
+      any? colonies-here              [ 3 ]
+      type-patch = "obstacle"         [ 1 ]
+      type-patch = "ravitaillement"   [ 2 ]
+                                      [ 0 ]) ] of p ] sort patches
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Invariants (branches dans liste-invariants-violes, it1_C)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Invariants propres a l'iteration 3 : liste vide si tout va bien.
 to-report liste-invariants-zombies-violes
-  ;; TODO : retourner la liste (vide si tout va bien) des invariants violes.
-  report []
+  let violes []
+  if nb-zombies-sur-obstacle > 0 [ set violes lput "zombie sur un obstacle" violes ]
+  if nb-zombies-hors-carte > 0 [ set violes lput "zombie hors de la carte" violes ]
+  report violes
 end
 
-;; Test de l'iteration 3 : meme principe que tester-it1 et tester-it2 (20 graines, tableau, verdict).
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test de l'iteration 3
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Une simulation complete (nb-zombies = 20, nb-obstacles = 30) pour une graine donnee.
+;; Renvoie : [ graine  invariants-ok  part-immobiles-moyenne  part-immobiles-max
+;;             max-zombies-sur-obstacle  humains-fin  zombies-fin ]
+;; ATTENTION : appelle setup, donc efface la simulation en cours.
+to-report evaluer-it3 [ graine ]
+  let anciens-zombies nb-zombies
+  let anciens-obstacles nb-obstacles
+  random-seed graine
+  set nb-zombies 20
+  set nb-obstacles 30
+  setup
+  set nb-zombies anciens-zombies
+  set nb-obstacles anciens-obstacles
+
+  let invariants-toujours-ok? true
+  let somme-part 0
+  let ticks-avec-zombies 0
+  let max-part 0
+  let max-obstacle 0
+  while [ ticks < duree-simulation ] [
+    go
+    if not invariants-ok? [ set invariants-toujours-ok? false ]
+    if any? zombies [
+      set somme-part somme-part + part-zombies-immobiles
+      set ticks-avec-zombies ticks-avec-zombies + 1
+    ]
+    set max-part max (list max-part part-zombies-immobiles)
+    set max-obstacle max (list max-obstacle nb-zombies-sur-obstacle)
+  ]
+  report (list graine invariants-toujours-ok?
+               (ifelse-value (ticks-avec-zombies > 0) [ somme-part / ticks-avec-zombies ] [ 0 ])
+               max-part max-obstacle count humains count zombies)
+end
+
+to afficher-ligne-it3 [ r ]
+  print (word "graine " item 0 r
+    " | invariants " item 1 r
+    " | immobiles " precision (100 * item 2 r) 2 " % en moyenne, " precision (100 * item 3 r) 1 " % au pire instant"
+    " | zombies sur obstacle (max) " item 4 r
+    " | humains fin " item 5 r
+    " | zombies fin " item 6 r)
+end
+
+;; Verification de l'indicateur d'immobilite, sur un monde vide (sans humain, graine-scenarios) :
+;; un zombie enferme dans une case entouree d'obstacles doit etre immobile apres seuil-immobile
+;; ticks ; un zombie libre ne doit jamais l'etre. Renvoie [ enferme-immobile? libre-jamais-immobile? ].
+to-report verifier-indicateur-immobile
+  preparer-test                         ;; it2_C : monde propre, sans agent
+  random-seed graine-scenarios
+  ask patch 5 5 [ ask neighbors [ set type-patch "obstacle" set pcolor gray ] ]
+  let enferme nobody
+  let libre nobody
+  create-zombies 1 [ initialiser-zombie move-to patch 5 5 set enferme self ]
+  create-zombies 1 [ initialiser-zombie move-to patch -8 -8 set libre self ]
+  let libre-jamais-immobile? true
+  repeat seuil-immobile + 2 [
+    ask zombies [ zombie-agir ]
+    mesurer-zombies-it3
+    if [ zombie-immobile? ] of libre [ set libre-jamais-immobile? false ]
+  ]
+  let resultat (list ([ zombie-immobile? ] of enferme) libre-jamais-immobile?)
+  preparer-test
+  report resultat
+end
+
+;; Non-regression : sans zombie, tester-it1 doit redonner exactement les lignes de
+;; results/reference_tester_it1.txt (chemin relatif au dossier du modele).
+;; Renvoie [ nb-lignes-identiques  nb-lignes-attendues  premiere-difference ].
+to-report comparer-reference-it1
+  let attendues []
+  let erreur ""
+  carefully [
+    file-open "results/reference_tester_it1.txt"
+    while [ not file-at-end? ] [
+      let ligne file-read-line
+      if (length ligne > 6) and (substring ligne 0 6 = "graine") [ set attendues lput ligne attendues ]
+    ]
+    file-close
+  ] [
+    file-close-all
+    set erreur (word "fichier de reference illisible : " error-message)
+  ]
+  if erreur != "" [ report (list 0 0 erreur) ]
+  let identiques 0
+  let difference ""
+  foreach n-values (length attendues) [ i -> i + 1 ] [ g ->
+    let obtenue ligne-it1 evaluer-it1 g
+    ifelse obtenue = item (g - 1) attendues
+      [ set identiques identiques + 1 ]
+      [ if difference = "" [ set difference (word "attendu : " item (g - 1) attendues " / obtenu : " obtenue) ] ]
+  ]
+  report (list identiques (length attendues) difference)
+end
+
+to afficher-criteres-it3 [ resultats reference ]
+  let parts map [ r -> item 2 r ] resultats
+  let moyenne mean parts
+  let max-instant max map [ r -> item 3 r ] resultats
+  print "--- Criteres de sortie ---"
+  print (word "1. aucun zombie sur un obstacle ni hors carte, invariants vrais a chaque tick (" nb-graines-test " graines) : "
+    reduce [ [ a b ] -> a and b ] map [ r -> item 1 r ] resultats
+    " (zombies sur obstacle, max : " max map [ r -> item 4 r ] resultats ")")
+  print (word "2. moins de " (precision (100 * seuil-part-immobiles) 1) " % de zombies immobiles (immobile = moins de " rayon-immobile " patch d'un meme point pendant "
+    seuil-immobile " ticks, sans proie au contact), en moyenne sur les ticks et les graines : " (moyenne < seuil-part-immobiles)
+    " (moyenne " precision (100 * moyenne) 3 " %, pire graine " precision (100 * max parts) 3 " %, pire instant " precision (100 * max-instant) 1 " %)")
+  print (word "3. " nb-graines-test " graines du modele complet sans erreur : vrai (le test est alle au bout)")
+  let verif verifier-indicateur-immobile
+  print (word "   indicateur d'immobilite verifie (zombie enferme par des obstacles : immobile apres " seuil-immobile
+    " ticks ; zombie libre : jamais immobile) : " (item 0 verif and item 1 verif))
+  print (word "4. non-regression sans zombie (tester-it1 = results/reference_tester_it1.txt) : "
+    (item 0 reference = item 1 reference and item 1 reference > 0)
+    " (" item 0 reference " lignes identiques sur " item 1 reference ")"
+    ifelse-value (item 2 reference = "") [ "" ] [ (word " ; " item 2 reference) ])
+  print "5. vitesse, portee et duree de vie des zombies fixees et justifiees : a verifier (partie B)."
+  print "6. tester-it2 (sans obstacle) : a relancer a part, ses criteres doivent rester vrais."
+end
+
+;; Message affiche au debut du test (tester-it3 et tester-it3-pas) : ce qui est teste.
+to annoncer-test-it3
+  print "=== Test iteration 3 : environnement / zombie (nb-zombies = 20, nb-obstacles = 30) ==="
+  print (word "Ce test lance " nb-graines-test " simulations de 720 ticks du modele complet (graines 1 a " nb-graines-test
+    "), avec les autres curseurs tels quels. Il verifie :")
+  print "  1. aucun zombie sur un obstacle ni hors de la carte, et tous les invariants vrais a chaque tick ;"
+  print (word "  2. moins de " (precision (100 * seuil-part-immobiles) 1) " % de zombies immobiles en moyenne (moins de " rayon-immobile " patch d'un meme point pendant "
+    seuil-immobile " ticks, sans proie au contact) ;")
+  print "  3. aucune erreur d'execution ;"
+  print (word "  4. non-regression : sans zombie, tester-it1 redonne les " nb-graines-test " lignes de results/reference_tester_it1.txt.")
+  print "Non testes ici : 5. reglages des zombies (partie B) ; 6. tester-it2 (a relancer a part) ; courbes (it3-courbes, it3-densite)."
+end
+
+;; Test d'un seul bloc (ligne de commande).
 to tester-it3
-  ;; TODO : lancer 20 simulations (nb-zombies = 20, nb-obstacles = 30) ; pour chacune, relever
-  ;;        l'invariant, la part de zombies immobiles et les humains a la fin ; afficher les criteres
-  ;;        de sortie de PLAN_ITERATIONS.md.
-  ;; Rappel : les reporters qui utilisent "of" consomment du hasard ;
-  ;;          ne pas comparer les graines de ce test avec celles d'autres experiences.
-  print "tester-it3 : a ecrire"
+  annoncer-test-it3
+  let resultats n-values nb-graines-test [ i -> evaluer-it3 (i + 1) ]
+  foreach resultats [ r -> afficher-ligne-it3 r ]
+  print "Non-regression de l'iteration 1 (20 simulations sans zombie) ..."
+  let reference comparer-reference-it1
+  afficher-criteres-it3 resultats reference
+end
+
+;; Test pas a pas (bouton "Test it3", "forever") : chaque passage avance d'un jour simule.
+;; La non-regression de l'iteration 1 se fait d'un bloc a la fin (quelques secondes).
+to tester-it3-pas
+  if test3-graine = 0 [ demarrer-test-it3 ]
+  ifelse ticks < duree-simulation [
+    repeat ticks-par-jour [
+      if ticks < duree-simulation [ mesurer-un-tick-it3 ]
+    ]
+  ] [
+    enregistrer-simulation-it3
+    ifelse test3-graine < nb-graines-test [
+      commencer-simulation-it3 (test3-graine + 1)
+    ] [
+      let resultats test3-resultats
+      print "Non-regression de l'iteration 1 (20 simulations sans zombie) ..."
+      let reference comparer-reference-it1
+      afficher-criteres-it3 resultats reference
+      set test3-graine 0
+      stop
+    ]
+  ]
+end
+
+to demarrer-test-it3
+  annoncer-test-it3
+  set test3-resultats []
+  commencer-simulation-it3 1
+end
+
+;; Memes reglages et meme ordre que evaluer-it3 : memes resultats par graine.
+to commencer-simulation-it3 [ graine ]
+  let resultats test3-resultats
+  let anciens-zombies nb-zombies
+  let anciens-obstacles nb-obstacles
+  random-seed graine
+  set nb-zombies 20
+  set nb-obstacles 30
+  setup
+  set nb-zombies anciens-zombies
+  set nb-obstacles anciens-obstacles
+  set test3-resultats resultats
+  set test3-graine graine
+  set test3-invariants-ok? true
+  set test3-somme-part-immobiles 0
+  set test3-ticks-avec-zombies 0
+  set test3-max-part-immobiles 0
+  set test3-max-sur-obstacle 0
+end
+
+to mesurer-un-tick-it3
+  go
+  if not invariants-ok? [ set test3-invariants-ok? false ]
+  if any? zombies [
+    set test3-somme-part-immobiles test3-somme-part-immobiles + part-zombies-immobiles
+    set test3-ticks-avec-zombies test3-ticks-avec-zombies + 1
+  ]
+  set test3-max-part-immobiles max (list test3-max-part-immobiles part-zombies-immobiles)
+  set test3-max-sur-obstacle max (list test3-max-sur-obstacle nb-zombies-sur-obstacle)
+end
+
+to enregistrer-simulation-it3
+  let r (list test3-graine test3-invariants-ok?
+              (ifelse-value (test3-ticks-avec-zombies > 0) [ test3-somme-part-immobiles / test3-ticks-avec-zombies ] [ 0 ])
+              test3-max-part-immobiles test3-max-sur-obstacle count humains count zombies)
+  set test3-resultats lput r test3-resultats
+  afficher-ligne-it3 r
 end

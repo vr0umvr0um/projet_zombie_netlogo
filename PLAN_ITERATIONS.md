@@ -76,7 +76,7 @@ Le code des parties A et B est écrit, assemblé et testé (`tester-it2`).
 | B | `it3_B_zombies_parametres.nls` | durée de vie, vitesse et portée de détection des zombies ; réglage de leur effectif |
 | C | `it3_C_indicateurs_tests.nls` | indicateurs spatiaux (carte de densité des zombies), invariant « aucun zombie sur un obstacle », `tester-it3`, courbes |
 
-Les trois fichiers sont des squelettes commentés : structure, procédures vides marquées `TODO`, aucun comportement nouveau.
+Partie C faite (`tester-it3`, indicateurs d'immobilité, invariants, carte de densité) ; les fichiers A et B sont encore des squelettes commentés (procédures vides marquées `TODO`).
 
 **Critères de sortie** : aucun zombie sur un obstacle ni hors carte ; moins de 5 % de zombies immobiles ; 20 graines du modèle complet sans erreur ; vitesse, portée et durée de vie des zombies fixées et justifiées.
 

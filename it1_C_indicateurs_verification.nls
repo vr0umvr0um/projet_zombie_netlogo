@@ -165,6 +165,9 @@ to-report liste-invariants-violes
   if nb-sorties-deficitaires > 0
     [ set violes lput "sortie deficitaire" violes ]
 
+  ;; iteration 3 : aucun zombie sur un obstacle ni hors de la carte (it3_C)
+  set violes sentence violes liste-invariants-zombies-violes
+
   report violes
 end
 
@@ -209,7 +212,12 @@ to-report evaluer-it1 [ graine ]
 end
 
 to afficher-ligne-it1 [ r ]
-  print (word "graine " item 0 r
+  print ligne-it1 r
+end
+
+;; Ligne affichee pour une graine ; aussi comparee a results/reference_tester_it1.txt par tester-it3.
+to-report ligne-it1 [ r ]
+  report (word "graine " item 0 r
     " | invariants " item 1 r
     " | survie " precision item 2 r 3
     " | famine " precision item 3 r 3
@@ -342,7 +350,11 @@ to-report progression-test
     ifelse test2-graine > 0 [
       report (word "it2 : simulation " test2-graine " sur " (nb-graines-test + 1) ", jour " jour " sur 30")
     ] [
-      report "aucun"
+      ifelse test3-graine > 0 [
+        report (word "it3 : graine " test3-graine " sur " nb-graines-test ", jour " jour " sur 30")
+      ] [
+        report "aucun"
+      ]
     ]
   ]
 end

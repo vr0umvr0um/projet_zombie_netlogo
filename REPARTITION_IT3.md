@@ -1,6 +1,8 @@
 # Répartition de l'itération 3 (environnement / zombie)
 
-**Branche** : `iteration3-corrigee`, recréée à partir des corrections des itérations 1 et 2 (branche `correction-iteration1-iteration2`, voir `CORRECTIONS_IT1_IT2.md`). Elle remplacera l'ancienne branche `iteration3` si les trois sont d'accord (pas de `push --force` sans accord). Si la relecture des corrections entraîne de nouveaux changements, ils seront reportés ici.
+**Branche** : `iteration3`, recréée à partir des corrections des itérations 1 et 2 (branche `correction-iteration1-iteration2`, voir `CORRECTIONS_IT1_IT2.md` : colonie protégée, calibrage, validation des réglages). Les anciennes branches `iteration3` et `iteration3-corrigee` ont été supprimées.
+
+**État** : partie C (Vanessa) **faite** (voir « C » plus bas) ; parties A (Soumia) et B (Amandine) à faire.
 
 Décision de l'équipe : **chaque personne garde la même lettre à chaque itération**. Il n'y a donc pas de rotation. Reste à valider ensemble la définition de « zombie immobile » et le calendrier (voir « À trancher »).
 
@@ -41,24 +43,26 @@ La relecture se fait dans les deux jours qui précèdent la séance d'assemblage
 5. Attention au temps de calcul : un calcul de trajet par zombie et par tick ralentirait beaucoup : ne l'appeler que si le zombie est bloqué.
 
 ### B : `it3_B_zombies_parametres.nls` (le plus d'expériences)
-1. **Revalider `proba-defense = 0,125` avec 30 obstacles** (elle a été choisie sans obstacle). Attention : depuis la prédation, **aucune valeur ne remplit les deux seuils, même sans obstacle** (zombies présents dans au moins la moitié des simulations, humains éteints dans au plus 10 % ; voir `analyse/calibration_defense.py`). Le critère est donc à trancher en équipe avant de lancer les balayages. Méthode à reprendre : l'expérience `it2-calibration-defense` (100 graines par valeur, graine = numéro de répétition), avec `nb-obstacles = 30`.
+1. `proba-defense = 0,125` **a déjà été revalidée avec 30 obstacles** (`it2-calibration-defense`, 0 et 30 obstacles, 100 graines par valeur) : depuis que la colonie protège ses habitants, le critère est rempli pour toutes les valeurs de 0 à 0,5. Point de départ des balayages : `results/validation_reglages.csv` (effet de chaque curseur, dont `portee-detection` et `duree-vie-zombie`). Constat à traiter : les 20 zombies du départ ont tous l'âge 0 et meurent ensemble au jour 20 (`figures/it2_courbes.png`, `figures/it3_courbes.png`).
 2. **Balayage un paramètre à la fois**, 100 simulations par valeur (avec 10 ou 20, le résultat bascule d'une valeur à l'autre) : vitesse des zombies (0,25 ; 0,5 ; 0,75), `portee-detection` (2 ; 3 ; 5), `duree-vie-zombie` (240 ; 480 ; 720).
 3. Décider si `vitesse-zombie` devient un curseur (le reporter est dans `it2_A_zombies.nls` : à coordonner avec A).
 4. Consigner les résultats (tableaux, niveau de certitude, limites) pour le rapport.
 
 Pour démarrer les balayages : les expériences existantes (`it1-stabilite`, `it2-courbes`, `it1-reglage-taux-naissance`) servent de modèle (menu Tools > BehaviorSpace de NetLogo). En ligne de commande, la commande est dans le README. Méthode à reprendre : critères choisis avant les mesures, même nombre de simulations par case, tableaux complets.
 
-### C : `it3_C_indicateurs_tests.nls` (le plus de tests)
-1. `nb-zombies-sur-obstacle` (doit valoir 0), `nb-zombies-immobiles`, `part-zombies-immobiles`.
-2. `liste-invariants-zombies-violes` (aucun zombie sur un obstacle ni hors carte) et branchement dans `liste-invariants-violes` (`it1_C_indicateurs_verification.nls`).
-3. `tester-it3` **et** sa version pas à pas `tester-it3-pas`, sur le modèle de `it2_C` (bouton « forever » arrêtable), avec un bouton et un moniteur dans le fichier principal.
-4. Expérience BehaviorSpace `it3-courbes`, carte de densité des zombies (variable de patch à déclarer dans le fichier principal) et script `analyse/carte_densite_it3.py` pour la figure.
+### C : `it3_C_indicateurs_tests.nls` (le plus de tests) : **fait**
+1. [x] `nb-zombies-sur-obstacle` (vaut toujours 0), `nb-zombies-hors-carte`, `nb-zombies-immobiles`, `part-zombies-immobiles`, `zombie-immobile?`. **Immobile** : le zombie est resté à moins d'**1 patch** d'un même point pendant **24 ticks**, sans proie au contact (un zombie qui attaque ne compte pas). Le rayon d'un patch compte aussi un zombie coincé qui tourne dans sa case ou fait des allers-retours. Mesuré à chaque tick par `mesurer-zombies-it3`, appelé dans `go`, **sans aucun tirage aléatoire** : `tester-it1` et `tester-it2` sont inchangés.
+2. [x] `liste-invariants-zombies-violes` (aucun zombie sur un obstacle ni hors carte), branchée dans `liste-invariants-violes` (`it1_C`).
+3. [x] `tester-it3` et `tester-it3-pas` (bouton « Test it3 », arrêtable), moniteurs « Zombies immobiles » et « Zombies sur obstacle ». Le test vérifie aussi l'indicateur (un zombie enfermé par des obstacles est immobile, un zombie libre jamais) et la **non-régression** : sans zombie, `tester-it1` redonne les 20 lignes de `results/reference_tester_it1.txt`.
+4. [x] Expériences `it3-courbes` et `it3-densite`, variable de patch `passages-zombies`, script `analyse/carte_densite_it3.py`, figures `figures/it3_courbes.png` et `figures/it3_carte_densite.png`.
+
+**Premiers résultats (mouvement actuel des zombies, avant la partie A)** : sur 20 graines, aucun zombie sur un obstacle ni hors carte, invariants vrais à chaque tick, **0,004 % de zombies immobiles en moyenne** (5 % au pire instant). Le bord de la carte reçoit 12,5 % des passages pour 11,8 % de la surface. **Avec 30 obstacles, le demi-tour actuel suffit déjà** : la partie A peut se concentrer sur la qualité du contournement (poursuite qui bute sur un obstacle) plutôt que sur des zombies coincés.
 
 ## Dépendances et points de contact
 
 | Ce qu'une partie fournit | À qui | Quand |
 |---|---|---|
-| `zombie-bloque?` et la variable `ticks-immobile` (dans `zombies-own`, fichier principal) : **Soumia** | Vanessa (compter les immobiles), Amandine (indicateur de balayage) | **dans les deux premiers jours** : tout le reste en dépend |
+| Mesure de l'immobilité : `zombie-immobile?` et `ticks-sans-bouger` (dans `zombies-own`), **fournis par la partie C** | Soumia (`zombie-bloque?` peut s'appuyer dessus), Amandine (indicateur de balayage) | disponible ; définition à confirmer avec Soumia |
 | Première version du contournement : **Soumia** | Amandine (balayages avec obstacles) | milieu d'itération ; Amandine peut commencer avec le mouvement actuel et relancer ensuite |
 | Définition de « immobile » et seuils | Soumia et Vanessa ensemble | première réunion |
 | Curseur éventuel pour la vitesse | Amandine (demande) et Soumia (propriétaire de `it2_A`) | avant qu'Amandine ne relance ses balayages |
@@ -72,7 +76,7 @@ Fichiers partagés : le fichier principal (variables, curseurs, boutons) et `it1
 - Vitesse, portée et durée de vie des zombies fixées et justifiées.
 
 **Non-régression** :
-- `tester-it1` (aucun zombie) doit redonner exactement les 20 lignes de `results/reference_tester_it1.txt` (régénéré sur la base corrigée : réservation du stock, sorties rentables) : le code de l'itération 3 ne doit rien changer quand il n'y a pas de zombie.
+- `tester-it1` (aucun zombie) doit redonner exactement les 20 lignes de `results/reference_tester_it1.txt` : le code de l'itération 3 ne doit rien changer quand il n'y a pas de zombie. `tester-it3` le vérifie automatiquement (critère 4).
 - `tester-it2` (sans obstacle) doit rester vrai sur ses critères. Ses lignes peuvent changer légèrement si la gestion des bords évolue.
 
 ## Calendrier proposé
@@ -89,8 +93,8 @@ Le plan prévoyait l'itération 3 du 27 novembre au 4 décembre. Les itérations
 Si vous préférez rester sur le calendrier du plan, l'assemblage est le 4 décembre.
 
 ## Méthode de travail
-- Chacune travaille dans **son fichier** : les conflits sont alors rares. Branche commune : `iteration3-corrigee`.
-- Avant de pousser : `git pull --rebase origin iteration3-corrigee`. Un commit par fonctionnalité terminée, message en français qui dit ce qui est mesuré.
+- Chacune travaille dans **son fichier** : les conflits sont alors rares. Branche commune : `iteration3`.
+- Avant de pousser : `git pull --rebase origin iteration3`. Un commit par fonctionnalité terminée, message en français qui dit ce qui est mesuré.
 - Jamais de `push --force` sans accord des trois.
 - Chaque fonctionnalité est testée (au minimum compilation et `tester-it1` inchangé) avant le push.
 
@@ -106,14 +110,15 @@ Si vous préférez rester sur le calendrier du plan, l'assemblage est le 4 déce
 9. Un humain qui disparaît passe toujours par `mourir [ cause ]` ou `transformer`, jamais par un `die` direct : ces procédures rendent le stock qu'il avait réservé (`liberer-reservation`) et tiennent les compteurs. Sinon, l'invariant des réservations échoue.
 10. Chaque test et chaque expérience fixe sa graine (`random-seed`) : sans cela, deux lancements ne donnent pas les mêmes chiffres.
 11. 20 graines ne suffisent pas pour départager deux valeurs proches d'un paramètre : compter au moins 100 simulations par valeur.
+12. Une mesure appelée à chaque tick dans `go` ne doit consommer aucun tirage aléatoire (pas de `ask zombies`, pas de `of` sur un ensemble : `foreach sort` puis `ask` sur un seul agent), sinon les tests des itérations précédentes changent.
+13. Les zombies ne voient que les humains en sortie (`proies-visibles`, `it2_A`) : toute nouvelle règle de détection passe par ce reporter.
 
 ## À trancher en début d'itération
-- Définition de « zombie immobile » (proposition : position inchangée depuis 24 ticks, soit un jour simulé, alors qu'aucun humain n'est à portée de contact).
+- Définition de « zombie immobile » : implémentée par la partie C (moins d'un patch d'un même point pendant 24 ticks, sans proie au contact), à confirmer avec Soumia.
 - Vitesse des zombies : curseur ou valeur fixe.
 - Garder ou non le calendrier avancé.
 - Adopter ou non la relecture croisée.
-- Critère de `proba-defense` : aucune valeur ne garde des zombies dans au moins la moitié des simulations sans éteindre les humains dans plus de 10 % des cas. Assouplir un seuil, ou agir sur un autre paramètre (`proba-mort-attaque`, `duree-vie-zombie`) ?
-- Remplacer l'ancienne branche `iteration3` par `iteration3-corrigee`.
+- Âge initial des zombies (partie B) : tous à 0 aujourd'hui, d'où la disparition groupée au jour 20.
 
 ## Message à envoyer
 ```
@@ -121,8 +126,8 @@ Itération 3 (zombies et obstacles). Chacune garde sa lettre :
 - Soumia : partie A (déplacement des zombies autour des obstacles)
 - Amandine : partie B (paramètres des zombies, balayages)
 - Vanessa : partie C (indicateurs spatiaux, invariants, test)
-Soumia, peux-tu livrer zombie-bloque? et ticks-immobile dans les deux premiers jours ? Le reste en dépend.
+La partie C est faite : tester-it3, indicateurs d'immobilité (zombie-immobile?), invariants, carte de densité. Soumia, zombie-bloque? peut s'appuyer sur zombie-immobile?.
 Proposition : une relecture croisée avant l'assemblage (Amandine relit A, Vanessa relit B, Soumia relit C) pour que chacune comprenne tout le modèle.
-Détails, dépendances et calendrier dans REPARTITION_IT3.md (branche iteration3-corrigee).
-Pour récupérer la branche : git fetch origin puis git checkout iteration3-corrigee.
+Détails, dépendances et calendrier dans REPARTITION_IT3.md (branche iteration3).
+Pour récupérer la branche : git fetch origin puis git checkout iteration3.
 ```
