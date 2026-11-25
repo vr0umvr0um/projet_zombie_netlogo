@@ -1,0 +1,64 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ITERATION 4 - PARTIE A : strategie "groupe fixe"
+;; Responsable : Soumia
+;; TP5 : "un groupe de taille fixe est selectionne aleatoirement parmi les humains disponibles pour
+;; partir ravitailler la colonie. Le groupe part ensemble, collecte ensemble et retourne ensemble."
+;; Reglages de test : strategie = "groupe fixe", taille-groupe = 5, nb-zombies = 20, nb-obstacles = 30.
+;;
+;; SQUELETTE : structure et contrats, procedures vides marquees TODO, aucun comportement nouveau.
+;; Tant que ce fichier n'est pas ecrit, "groupe fixe" se comporte comme "individuelle"
+;; (tester-it4 le signale : "groupes non implementes").
+;;
+;; Contrats a respecter (verifies par les invariants de it4_C, liste-invariants-groupes-violes) :
+;;  - groupe-id (humains-own) : -1 pour un humain seul ; un identifiant >= 0 partage par les membres
+;;    d'un meme groupe, unique dans la simulation (par exemple un compteur global de ce fichier) ;
+;;  - les membres d'un groupe ont la meme colonie-origine, la meme mission, le meme cible-point ;
+;;  - un groupe en sortie avance ensemble : tous ses membres sont sur la meme case a chaque tick
+;;    (les reunir sur une case de depart commune avant le premier pas) ;
+;;  - au retour a la colonie, le groupe est dissous : groupe-id redevient -1 ;
+;;  - plafond : une sortie de groupe compte pour une seule sortie (sortie-autorisee?, it4_C) ;
+;;  - un membre qui disparait passe par mourir ou transformer (jamais die directement) ;
+;;  - avec taille-groupe = 1, les resultats doivent etre identiques a "individuelle" (critere 1 de
+;;    tester-it4) : ne pas consommer de tirage aleatoire en plus dans ce cas.
+;;
+;; Branchement prevu (a coordonner avec Amandine, proprietaire de it1_B) : dans decider-sortie,
+;;   if strategie != "individuelle" [ decider-sortie-groupe stop ]
+;; et, dans humain-agir, les membres d'un groupe suivent le meneur (deplacer-groupe).
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Taille du groupe a former : taille-groupe pour "groupe fixe", taille-groupe-adaptative (it4_B)
+;; pour "groupe adaptatif".
+to-report taille-groupe-voulue
+  ;; TODO : (ifelse-value strategie = "groupe adaptatif" [ taille-groupe-adaptative colonie-origine ] [ taille-groupe ])
+  report taille-groupe
+end
+
+;; Appelee par un humain a la colonie quand le stock est sous s-min (a la place de la sortie
+;; individuelle) : former le groupe et le faire partir.
+to decider-sortie-groupe
+  ;; TODO :
+  ;;  1. verifier sortie-autorisee? colonie-origine (it4_C) et le stock de la colonie ;
+  ;;  2. choisir le trajet (chemin-vers-ravitaillement, it1_B) ; la rentabilite doit tenir pour le
+  ;;     groupe entier : quantite collectable par le groupe > 2 x nombre de pas x taille du groupe ;
+  ;;  3. tirer les membres au hasard parmi les humains disponibles de la colonie (n-of), au plus
+  ;;     taille-groupe-voulue ; s'il y en a moins, partir avec ceux qui sont la ;
+  ;;  4. avancer la ration de chacun, reserver le stock (comme decider-sortie), donner a tous le
+  ;;     meme groupe-id, chemin-aller, cible-point, mission "aller", et les rendre visibles.
+end
+
+;; Un pas du groupe : le meneur (par exemple le plus petit who) avance, les autres le suivent sur
+;; la meme case ; chacun consomme 1 unite par pas (comme aller-vers-point et rentrer-a-la-colonie).
+to deplacer-groupe
+  ;; TODO
+end
+
+;; Collecte en commun a l'arrivee : partager la quantite collectee entre les membres, dans la
+;; limite de la capacite de chacun.
+to collecter-en-groupe
+  ;; TODO
+end
+
+;; Au retour : deposer, compter la sortie (bilan de it1_B), dissoudre le groupe (groupe-id -1).
+to dissoudre-groupe
+  ;; TODO
+end

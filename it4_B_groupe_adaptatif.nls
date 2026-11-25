@@ -1,0 +1,39 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ITERATION 4 - PARTIE B : strategie "groupe adaptatif"
+;; Responsable : Amandine
+;; TP5 : "un groupe ajuste sa taille en fonction du nombre de zombies repere autour de la colonie."
+;; Reglages de test : strategie = "groupe adaptatif", nb-zombies = 20, nb-obstacles = 30.
+;;
+;; SQUELETTE : structure et contrats, procedures vides marquees TODO, aucun comportement nouveau.
+;; La formation et le deplacement du groupe sont ceux de la partie A (decider-sortie-groupe,
+;; deplacer-groupe) : seule la taille change.
+;;
+;; A faire aussi dans cette partie (fichiers d'Amandine) :
+;;  - dans detecter-et-defendre (it2_B), remplacer proba-defense par proba-defense-effective
+;;    (it4_C) : defense collective. Sans groupe, la valeur est exactement proba-defense : aucun
+;;    resultat ne change pour la strategie individuelle ;
+;;  - dans decider-sortie (it1_B), remplacer le plafond ecrit en dur (plafond-sorties 1) par
+;;    sortie-autorisee? (it4_C), et brancher decider-sortie-groupe (it4_A).
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Rayon autour de la colonie dans lequel les zombies sont reperes (en patches). A regler et a
+;; justifier (par exemple portee-detection, ou la distance d'une sortie typique).
+to-report rayon-reperage
+  ;; TODO
+  report portee-detection
+end
+
+;; Zombies reperes autour de la colonie c. Attention : les zombies n'attaquent pas dans la colonie
+;; (proies-visibles, it2_A), c'est un indice de danger pour la sortie, pas pour la colonie.
+to-report zombies-reperes [ c ]
+  ;; TODO : [ count zombies in-radius rayon-reperage ] of c
+  report 0
+end
+
+;; Taille du groupe pour la colonie c : par exemple 1 sans zombie repere, puis une taille qui croit
+;; avec le nombre de zombies, bornee par taille-groupe (curseur) et par les humains disponibles.
+;; La regle et ses seuils sont a choisir, a mesurer (100 graines par variante) et a justifier.
+to-report taille-groupe-adaptative [ c ]
+  ;; TODO
+  report taille-groupe
+end
