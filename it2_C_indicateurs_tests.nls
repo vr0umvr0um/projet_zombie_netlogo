@@ -287,6 +287,7 @@ end
 
 ;; Message affiche au debut du test (tester-it2 et tester-it2-pas) : ce qui est teste.
 to annoncer-test-it2
+  imposer-strategie-individuelle   ;; it1_C
   print "=== Test iteration 2 : humain / zombie ==="
   print "Ce test verifie :"
   print (word "  1. attaques isolees (" nb-essais-attaque " attaques par cas, un humain en sortie et un zombie seuls, graine " graine-scenarios ") :"

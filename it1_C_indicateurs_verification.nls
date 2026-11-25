@@ -167,6 +167,8 @@ to-report liste-invariants-violes
 
   ;; iteration 3 : aucun zombie sur un obstacle ni hors de la carte (it3_C)
   set violes sentence violes liste-invariants-zombies-violes
+  ;; iteration 4 : contrats des groupes (it4_C)
+  set violes sentence violes liste-invariants-groupes-violes
 
   report violes
 end
@@ -262,7 +264,17 @@ to afficher-criteres-it1 [ resultats ]
 end
 
 ;; Message affiche au debut du test (tester-it1 et tester-it1-pas) : ce qui est teste.
+;; Les tests des iterations 1 a 3 portent sur la strategie individuelle (references comprises) :
+;; ils remettent le selecteur strategie a "individuelle" s'il etait sur une strategie de groupe.
+to imposer-strategie-individuelle
+  if strategie != "individuelle" [
+    print (word "Strategie \"" strategie "\" remplacee par \"individuelle\" pour ce test.")
+    set strategie "individuelle"
+  ]
+end
+
 to annoncer-test-it1
+  imposer-strategie-individuelle
   print "=== Test iteration 1 : environnement / humain (nb-zombies = 0) ==="
   print (word "Ce test lance " nb-graines-test " simulations de 720 ticks (graines 1 a " nb-graines-test
     "), sans zombie, avec les autres curseurs tels quels. Il verifie :")
@@ -353,7 +365,12 @@ to-report progression-test
       ifelse test3-graine > 0 [
         report (word "it3 : graine " test3-graine " sur " nb-graines-test ", jour " jour " sur 30")
       ] [
-        report "aucun"
+        ifelse is-list? test4-courant [
+          report (word "it4 : " item 1 test4-courant " (taille " item 2 test4-courant "), graine " item 3 test4-courant
+            ", jour " jour " ; reste " length test4-file)
+        ] [
+          report "aucun"
+        ]
       ]
     ]
   ]

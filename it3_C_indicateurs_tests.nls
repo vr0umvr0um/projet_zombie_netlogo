@@ -267,6 +267,7 @@ end
 
 ;; Message affiche au debut du test (tester-it3 et tester-it3-pas) : ce qui est teste.
 to annoncer-test-it3
+  imposer-strategie-individuelle   ;; it1_C
   print "=== Test iteration 3 : environnement / zombie (nb-zombies = 20, nb-obstacles = 30) ==="
   print (word "Ce test lance " nb-graines-test " simulations de 720 ticks du modele complet (graines 1 a " nb-graines-test
     "), avec les autres curseurs tels quels. Il verifie :")

@@ -18,6 +18,9 @@ __includes [
   "it3_A_zombies_obstacles.nls"
   "it3_B_zombies_parametres.nls"
   "it3_C_indicateurs_tests.nls"
+  "it4_A_groupe_fixe.nls"
+  "it4_B_groupe_adaptatif.nls"
+  "it4_C_comparaison_tests.nls"
 ]
 
 ;; Developpement par iterations :
@@ -77,6 +80,7 @@ humains-own [
   chemin-aller             ;; liste des patches parcourus, rejoue a l'envers au retour
   groupe-id                ;; -1 = seul ; sinon identifiant du groupe (strategies de groupe)
   reservation              ;; quantite reservee sur cible-point pendant l'aller (it1_B), 0 sinon
+  mission-precedente       ;; mission au tick precedent, 0 avant la premiere mesure (it4_C, indicateurs)
 ]
 
 zombies-own [
@@ -125,6 +129,7 @@ to go
   ask humains [ humain-agir ]
   ask zombies [ zombie-agir ]
   mesurer-zombies-it3             ;; mesures seulement, sans tirage aleatoire (it3_C)
+  mesurer-humains-it4             ;; idem : departs, retours, retours infectes, groupes (it4_C)
   if (ticks mod ticks-par-jour) = 0 [ evenements-journaliers ]
   actualiser-affichage-colonies   ;; affichage seulement (it1_A)
 
@@ -146,14 +151,17 @@ end
     <view x="368" wrappingAllowedX="false" y="10" frameRate="30.0" minPycor="-16" height="434" showTickCounter="true" patchSize="13.0" fontSize="10" wrappingAllowedY="false" width="434" tickCounterLabel="ticks" maxPycor="16" updateMode="1" maxPxcor="16" minPxcor="-16"></view>
     <button x="10" y="20" height="40" disableUntilTicks="false" forever="false" kind="Observer" width="100" display="Initialisation">setup</button>
     <button x="10" y="70" height="40" disableUntilTicks="false" forever="true" kind="Observer" width="101" display="Simulation">go-visuel</button>
-    <button x="10" y="475" height="35" disableUntilTicks="false" forever="true" kind="Observer" width="100" display="Test it1">tester-it1-pas</button>
-    <button x="115" y="475" height="35" disableUntilTicks="false" forever="true" kind="Observer" width="100" display="Test it2">tester-it2-pas</button>
-    <button x="220" y="475" height="35" disableUntilTicks="false" forever="true" kind="Observer" width="100" display="Test it3">tester-it3-pas</button>
+    <button x="10" y="475" height="35" disableUntilTicks="false" forever="true" kind="Observer" width="80" display="Test it1">tester-it1-pas</button>
+    <button x="95" y="475" height="35" disableUntilTicks="false" forever="true" kind="Observer" width="80" display="Test it2">tester-it2-pas</button>
+    <button x="180" y="475" height="35" disableUntilTicks="false" forever="true" kind="Observer" width="80" display="Test it3">tester-it3-pas</button>
+    <button x="265" y="475" height="35" disableUntilTicks="false" forever="true" kind="Observer" width="80" display="Test it4">tester-it4-pas</button>
     <slider x="815" step="0.01" y="20" max="1" width="250" display="delai-tick" height="50" min="0" direction="Horizontal" default="0.05" variable="delai-tick" units="s"></slider>
     <monitor x="815" precision="0" y="80" height="60" fontSize="11" width="250" display="Temps simulé">(word "jour " floor (ticks / ticks-par-jour) " , heure " (ticks mod ticks-par-jour))</monitor>
     <monitor x="815" precision="0" y="150" height="60" fontSize="11" width="250" display="Test en cours">progression-test</monitor>
     <monitor x="815" precision="0" y="220" height="60" fontSize="11" width="120" display="Zombies immobiles">nb-zombies-immobiles</monitor>
     <monitor x="945" precision="0" y="220" height="60" fontSize="11" width="120" display="Zombies sur obstacle">nb-zombies-sur-obstacle</monitor>
+    <monitor x="815" precision="0" y="290" height="60" fontSize="11" width="120" display="Sorties de groupe">nb-departs-groupes</monitor>
+    <monitor x="945" precision="0" y="290" height="60" fontSize="11" width="120" display="Retours infectes">nb-retours-infectes</monitor>
     <chooser x="10" y="120" height="60" variable="strategie" current="0" width="150" display="strategie">
       <choice type="string" value="individuelle"></choice>
       <choice type="string" value="groupe fixe"></choice>
@@ -1200,6 +1208,43 @@ setup</setup>
         <metric>carte-types</metric>
       </metrics>
       <constants>
+        <enumeratedValueSet variable="nb-zombies">
+          <value value="20"></value>
+        </enumeratedValueSet>
+        <enumeratedValueSet variable="nb-obstacles">
+          <value value="30"></value>
+        </enumeratedValueSet>
+      </constants>
+    </experiment>
+    <experiment name="it4-comparaison" repetitions="100" sequentialRunOrder="true" runMetricsEveryStep="false" timeLimit="720">
+      <setup>random-seed (((behaviorspace-run-number - 1) mod 100) + 1)
+setup</setup>
+      <go>go</go>
+      <metrics>
+        <metric>invariants-ok?</metric>
+        <metric>count humains</metric>
+        <metric>proportion-survivants</metric>
+        <metric>nb-morts-attaque</metric>
+        <metric>nb-morts-famine</metric>
+        <metric>nb-morts-infection</metric>
+        <metric>nb-transformations</metric>
+        <metric>count zombies</metric>
+        <metric>nb-departs</metric>
+        <metric>nb-departs-groupes</metric>
+        <metric>nb-retours</metric>
+        <metric>nb-retours-infectes</metric>
+        <metric>nourriture-par-sortie</metric>
+        <metric>taille-max-groupe-observee</metric>
+      </metrics>
+      <constants>
+        <enumeratedValueSet variable="strategie">
+          <value value="&quot;individuelle&quot;"></value>
+          <value value="&quot;groupe fixe&quot;"></value>
+          <value value="&quot;groupe adaptatif&quot;"></value>
+        </enumeratedValueSet>
+        <enumeratedValueSet variable="taille-groupe">
+          <value value="5"></value>
+        </enumeratedValueSet>
         <enumeratedValueSet variable="nb-zombies">
           <value value="20"></value>
         </enumeratedValueSet>

@@ -82,11 +82,13 @@ Partie C faite (`tester-it3`, indicateurs d'immobilité, invariants, carte de de
 
 ## Itération 4 - stratégies de groupe
 
-| Partie | Contenu prévu |
-|---|---|
-| A | Groupe fixe : constitution aléatoire, trajet commun, retour commun |
-| B | Groupe adaptatif : taille selon les zombies repérés autour de la colonie |
-| C | Défense collective, plafond de sorties, indicateurs de comparaison (infections introduites au retour, nourriture par sortie, nombre de sorties) |
+| Partie | Fichier | Contenu |
+|---|---|---|
+| A | `it4_A_groupe_fixe.nls` | groupe fixe : constitution aléatoire, trajet commun, retour commun |
+| B | `it4_B_groupe_adaptatif.nls` | groupe adaptatif : taille selon les zombies repérés autour de la colonie ; branchements dans `it1_B` et `it2_B` |
+| C | `it4_C_comparaison_tests.nls` | défense collective, plafond de sorties, indicateurs de comparaison (infections introduites au retour, nourriture par sortie, nombre de sorties), invariants des groupes, `tester-it4` |
+
+Branche `iteration4` (depuis `iteration3`). Partie C faite ; A et B sont des squelettes commentés. Détails dans `REPARTITION_IT4.md`.
 
 **Critères de sortie** : avec `taille-groupe = 1`, le groupe fixe donne les mêmes résultats que la stratégie individuelle (comparer sur 20 graines) ; le groupe se déplace et se défend ensemble ; invariants vrais pour les trois stratégies.
 

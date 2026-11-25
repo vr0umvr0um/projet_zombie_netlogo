@@ -1,0 +1,407 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ITERATION 4 - PARTIE C : defense collective, plafond de sorties, indicateurs de comparaison, tests
+;; Responsable : Vanessa
+;; Plan : "Defense collective, plafond de sorties, indicateurs de comparaison (infections introduites
+;; au retour, nourriture par sortie, nombre de sorties)".
+;;
+;; Ce fichier fournit aux parties A et B :
+;;  - proba-defense-effective : probabilite de defense d'un humain, en groupe ou seul (a appeler dans
+;;    detecter-et-defendre, it2_B, a la place de proba-defense) ;
+;;  - sortie-autorisee? [ colonie ] : plafond de sorties, une sortie de groupe comptant pour une
+;;    (a appeler dans decider-sortie, it1_B, et decider-sortie-groupe, it4_A).
+;; Tant que ces deux branchements ne sont pas faits, tester-it4 le signale.
+;;
+;; Mode d'emploi :
+;;  - bouton "Test it4" (tester-it4-pas, "forever", arretable) ; tester-it4 d'un seul bloc ;
+;;  - BehaviorSpace it4-comparaison (3 strategies x 100 graines), puis
+;;    python analyse/comparaison_strategies_it4.py.
+;;
+;; REPRODUCTIBILITE : mesurer-humains-it4, appele a chaque tick par go, ne consomme aucun tirage
+;; aleatoire (foreach sort, ask sur un seul agent) : tester-it1 a tester-it3 sont inchanges.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+globals [
+  ;; indicateurs de comparaison (remis a 0 par setup)
+  nb-departs                  ;; humains partis en sortie (passage de "colonie" a "aller")
+  nb-departs-groupes          ;; sorties de groupe (un groupe = une sortie)
+  nb-retours                  ;; humains revenus a la colonie (passage de "retour" a "colonie")
+  nb-retours-infectes         ;; dont infectes : infections introduites dans la colonie
+  taille-max-groupe-observee  ;; plus grand groupe vu en sortie
+  ;; etat du test pas a pas (sauvegarde et restaure autour de setup)
+  test4-file                  ;; simulations restant a faire : [ phase strategie taille graine ]
+  test4-courant               ;; simulation en cours
+  test4-resultats             ;; [ phase strategie taille resultat ]
+  test4-invariants-ok?
+  test4-strategie-origine
+  test4-taille-origine
+]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Defense collective
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Membres du groupe de cet humain qui peuvent l'aider : meme groupe, en sortie, au contact
+;; (distance-contact, it2_A). Lui compris. Un humain seul (groupe-id -1) est seul a se defendre.
+to-report defenseurs
+  ifelse groupe-id >= 0 [
+    let mon-groupe groupe-id
+    report count (humains in-radius distance-contact) with [ groupe-id = mon-groupe and mission != "colonie" ]
+  ] [
+    report 1
+  ]
+end
+
+;; TP5 : "le groupe se defendra ensemble si un zombie est detecte". Chaque defenseur tente sa
+;; chance independamment : la defense echoue seulement si tous echouent.
+;;   p(k defenseurs) = 1 - (1 - proba-defense) ^ k
+;; Seul (k = 1), c'est exactement proba-defense : la strategie individuelle ne change pas.
+to-report proba-defense-collective [ k ]
+  report defense-collective proba-defense k
+end
+
+;; Meme formule pour une probabilite individuelle p quelconque (tests).
+to-report defense-collective [ p k ]
+  report 1 - (1 - p) ^ k
+end
+
+;; A appeler par l'humain attaque (detecter-et-defendre, it2_B) a la place de proba-defense.
+to-report proba-defense-effective
+  report proba-defense-collective defenseurs
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Plafond de sorties
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Sorties simultanees au plus par colonie. 1 : valeur confirmee a l'iteration 1 pour la strategie
+;; individuelle (voir decider-sortie, it1_B) ; un groupe compte pour une seule sortie.
+to-report plafond-sorties-colonie
+  report 1
+end
+
+;; Sorties en cours de la colonie c : chaque humain seul en compte une, chaque groupe une seule.
+;; foreach sort et of sur un seul agent : aucun tirage aleatoire.
+to-report nb-sorties-en-cours [ c ]
+  let seuls 0
+  let groupes []
+  foreach sort humains with [ colonie-origine = c and mission != "colonie" ] [ h ->
+    let g [ groupe-id ] of h
+    ifelse g < 0 [ set seuls seuls + 1 ] [ if not member? g groupes [ set groupes lput g groupes ] ]
+  ]
+  report seuls + length groupes
+end
+
+;; Vrai si la colonie c peut lancer une nouvelle sortie (seule ou en groupe).
+to-report sortie-autorisee? [ c ]
+  report nb-sorties-en-cours c < plafond-sorties-colonie
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Indicateurs de comparaison (mesures a chaque tick, appelees par go)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Detecte les changements de mission depuis le tick precedent : departs, retours, retours
+;; d'infectes, et la taille des groupes en sortie. mission-precedente est une variable d'humain
+;; du fichier principal (0 pour un humain qui vient d'apparaitre : premiere mesure).
+to mesurer-humains-it4
+  let groupes-partis []
+  let ids-en-sortie []
+  foreach sort humains [ h ->
+    ask h [
+      if is-string? mission-precedente [
+        if mission-precedente = "colonie" and mission = "aller" [
+          set nb-departs nb-departs + 1
+          if groupe-id >= 0 and not member? groupe-id groupes-partis [ set groupes-partis lput groupe-id groupes-partis ]
+        ]
+        if mission-precedente = "retour" and mission = "colonie" [
+          set nb-retours nb-retours + 1
+          if etat = "infecte" [ set nb-retours-infectes nb-retours-infectes + 1 ]
+        ]
+      ]
+      if groupe-id >= 0 and mission != "colonie" [ set ids-en-sortie lput groupe-id ids-en-sortie ]
+      set mission-precedente mission
+    ]
+  ]
+  set nb-departs-groupes nb-departs-groupes + length groupes-partis
+  foreach remove-duplicates ids-en-sortie [ g ->
+    set taille-max-groupe-observee max (list taille-max-groupe-observee length filter [ x -> x = g ] ids-en-sortie)
+  ]
+end
+
+;; Part des retours a la colonie qui ramenent un infecte (TP5 : "risque d'introduire [l'infection]
+;; dans la colonie si un infecte rentre au groupe").
+to-report part-retours-infectes
+  ifelse nb-retours > 0 [ report nb-retours-infectes / nb-retours ] [ report 0 ]
+end
+
+;; Nourriture nette rapportee par humain parti (gain-moyen-sortie, it1_C, par humain revenu).
+to-report nourriture-par-sortie
+  report gain-moyen-sortie
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Invariants des groupes (branches dans liste-invariants-violes, it1_C)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Liste vide si les contrats de la partie A sont respectes. Aucun tirage aleatoire.
+to-report liste-invariants-groupes-violes
+  let violes []
+  if strategie = "individuelle" and any? humains with [ groupe-id != -1 ]
+    [ set violes lput "groupe en strategie individuelle" violes ]
+  if any? humains with [ mission = "colonie" and groupe-id != -1 ]
+    [ set violes lput "groupe non dissous a la colonie" violes ]
+  let ids []
+  foreach sort humains with [ groupe-id >= 0 ] [ h -> let g [ groupe-id ] of h if not member? g ids [ set ids lput g ids ] ]
+  let coherent? true
+  let ensemble? true
+  foreach ids [ g ->
+    let membres sort humains with [ groupe-id = g ]
+    if length remove-duplicates map [ h -> [ colonie-origine ] of h ] membres > 1 or
+       length remove-duplicates map [ h -> [ mission ] of h ] membres > 1 or
+       length remove-duplicates map [ h -> [ cible-point ] of h ] membres > 1
+      [ set coherent? false ]
+    if length remove-duplicates map [ h -> [ patch-here ] of h ] membres > 1
+      [ set ensemble? false ]
+  ]
+  if not coherent? [ set violes lput "membres d'un groupe incoherents (colonie, mission ou point)" violes ]
+  if not ensemble? [ set violes lput "groupe disperse (membres sur des cases differentes)" violes ]
+  report violes
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test de l'iteration 4
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report strategies
+  report [ "individuelle" "groupe fixe" "groupe adaptatif" ]
+end
+
+to-report taille-groupe-test     ;; taille de groupe des simulations de comparaison
+  report 5
+end
+
+;; Une simulation complete (nb-zombies = 20, nb-obstacles = 30) avec la strategie et la taille
+;; de groupe donnees. Les curseurs strategie et taille-groupe sont lus pendant go : ils restent
+;; regles pendant la simulation, l'appelant les remet ensuite.
+;; Renvoie : [ graine invariants-ok humains-fin morts-attaque morts-famine morts-infection
+;;             departs departs-groupes retours retours-infectes nourriture-par-sortie taille-max-groupe ]
+to-report evaluer-it4 [ graine strat taille ]
+  let anciens-zombies nb-zombies
+  let anciens-obstacles nb-obstacles
+  set strategie strat
+  set taille-groupe taille
+  random-seed graine
+  set nb-zombies 20
+  set nb-obstacles 30
+  setup
+  set nb-zombies anciens-zombies
+  set nb-obstacles anciens-obstacles
+  let invariants-toujours-ok? true
+  while [ ticks < duree-simulation ] [
+    go
+    if not invariants-ok? [ set invariants-toujours-ok? false ]
+  ]
+  report resultat-simulation-it4 graine invariants-toujours-ok?
+end
+
+to-report resultat-simulation-it4 [ graine inv ]
+  report (list graine inv count humains nb-morts-attaque nb-morts-famine nb-morts-infection
+               nb-departs nb-departs-groupes nb-retours nb-retours-infectes nourriture-par-sortie
+               taille-max-groupe-observee)
+end
+
+;; Defense collective, scenario isole (monde vide, graine-scenarios) : un groupe de k humains en
+;; sortie sur la meme case et un zombie ; n attaques avec proba-defense p, sans mort ni infection.
+;; Renvoie la frequence des defenses reussies (attendu : 1 - (1 - p)^k si it2_B appelle
+;; proba-defense-effective, p sinon).
+to-report frequence-defense-groupe [ n k p ]
+  let anciennes (list proba-defense proba-mort-attaque proba-infection)
+  set proba-defense p
+  set proba-mort-attaque 0
+  set proba-infection 0
+  preparer-test                   ;; it2_C : monde propre, sans agent
+  random-seed graine-scenarios
+  let defenses 0
+  repeat n [
+    create-humains k [ set etat "sain" set mission "aller" set groupe-id 0 set reservation 0 move-to patch 0 0 ]
+    let z nobody
+    create-zombies 1 [ initialiser-zombie move-to patch 0 0 set z self ]
+    let numero [ who ] of z
+    ask z [ zombie-attaquer ]
+    if not any? zombies with [ who = numero ] [ set defenses defenses + 1 ]
+    ask humains [ die ]
+    ask zombies [ die ]
+  ]
+  set proba-defense item 0 anciennes
+  set proba-mort-attaque item 1 anciennes
+  set proba-infection item 2 anciennes
+  report defenses / n
+end
+
+;; Moyenne de l'element i des resultats d'une liste de simulations.
+to-report moyenne-it4 [ resultats i ]
+  report mean map [ r -> item i r ] resultats
+end
+
+to afficher-ligne-it4 [ strat taille r ]
+  print (word strat " (taille " taille ") graine " item 0 r " | invariants " item 1 r " | humains " item 2 r
+    " | morts attaque " item 3 r " famine " item 4 r " infection " item 5 r
+    " | departs " item 6 r " (groupes " item 7 r ") | retours infectes " item 9 r "/" item 8 r
+    " | nourriture/sortie " precision item 10 r 1 " | plus grand groupe " item 11 r)
+end
+
+;; Resultats de la phase et de la strategie donnees : liste des resultats.
+to-report resultats-it4 [ tous phase strat ]
+  report map [ x -> item 3 x ] filter [ x -> item 0 x = phase and item 1 x = strat ] tous
+end
+
+to afficher-criteres-it4 [ tous reference ]
+  let n 1000
+  let p 0.3
+  let f1 frequence-defense-groupe n 1 p
+  let f3 frequence-defense-groupe n 3 p
+  let attendu3 defense-collective p 3
+  print "--- Defense collective (scenario isole, 1000 attaques, proba-defense 0,3) ---"
+  print (word "formule 1 - (1 - p)^k : seul " precision defense-collective p 1 3 " (= p), groupe de 3 : " precision attendu3 3)
+  print (word "humain seul : defenses " precision f1 3 " (attendu " p " +/- " tolerance-frequence ") : " (abs (f1 - p) <= tolerance-frequence))
+  let branchee? abs (f3 - attendu3) <= tolerance-frequence
+  print (word "groupe de 3 : defenses " precision f3 3 " (attendu " precision attendu3 3 " +/- " tolerance-frequence ") : " branchee?
+    ifelse-value branchee? [ "" ] [ "  -> defense collective NON BRANCHEE : detecter-et-defendre (it2_B) doit utiliser proba-defense-effective" ])
+
+  print "--- Comparaison des strategies (moyennes sur les graines) ---"
+  foreach strategies [ s ->
+    let rs resultats-it4 tous "comparaison" s
+    print (word s " : humains " precision moyenne-it4 rs 2 2 ", morts par attaque " precision moyenne-it4 rs 3 2
+      ", famine " precision moyenne-it4 rs 4 2 ", departs " precision moyenne-it4 rs 6 1
+      ", sorties de groupe " precision moyenne-it4 rs 7 1 ", retours infectes " precision moyenne-it4 rs 9 2
+      ", nourriture par sortie " precision moyenne-it4 rs 10 1 ", plus grand groupe " max map [ r -> item 11 r ] rs)
+  ]
+
+  print "--- Criteres de sortie ---"
+  let individuelles resultats-it4 tous "taille 1" "individuelle"
+  let fixes-1 resultats-it4 tous "taille 1" "groupe fixe"
+  let identiques length filter [ i -> item i individuelles = item i fixes-1 ] n-values length individuelles [ i -> i ]
+  print (word "1. taille-groupe = 1 : groupe fixe = individuelle sur " length individuelles " graines : "
+    (identiques = length individuelles) " (" identiques " simulations identiques)")
+  let groupes-vus? false
+  foreach [ "groupe fixe" "groupe adaptatif" ] [ s ->
+    let rs resultats-it4 tous "comparaison" s
+    let vus? max map [ r -> item 11 r ] rs > 1
+    if vus? [ set groupes-vus? true ]
+    print (word "2. " s " : groupes de plus d'un humain observes : " vus?
+      ifelse-value vus? [ "" ] [ (word "  -> groupes NON IMPLEMENTES (" ifelse-value (s = "groupe fixe") [ "partie A" ] [ "parties A et B" ] ")") ])
+  ]
+  print (word "2. le groupe se deplace ensemble (invariant \"groupe disperse\") et se defend ensemble (scenario ci-dessus) : "
+    (groupes-vus? and branchee?) ifelse-value (groupes-vus? and branchee?) [ "" ] [ " (en attente des parties A et B)" ])
+  let inv-ok true
+  foreach tous [ x -> if not item 1 item 3 x [ set inv-ok false ] ]
+  print (word "3. invariants vrais a chaque tick pour les trois strategies (" nb-graines-test " graines chacune) : " inv-ok)
+  print (word "4. non-regression sans zombie (tester-it1 = results/reference_tester_it1.txt) : "
+    (item 0 reference = item 1 reference and item 1 reference > 0) " (" item 0 reference " lignes identiques sur " item 1 reference ")"
+    ifelse-value (item 2 reference = "") [ "" ] [ (word " ; " item 2 reference) ])
+end
+
+to annoncer-test-it4
+  print "=== Test iteration 4 : strategies de groupe (nb-zombies = 20, nb-obstacles = 30) ==="
+  print (word "Ce test lance, pour chaque strategie (" strategies "), " nb-graines-test " simulations de 720 ticks (graines 1 a "
+    nb-graines-test ", taille-groupe = " taille-groupe-test "), puis individuelle et groupe fixe avec taille-groupe = 1. Il verifie :")
+  print "  1. avec taille-groupe = 1, groupe fixe donne exactement les memes resultats que individuelle ;"
+  print "  2. des groupes se forment, se deplacent ensemble (meme case) et se defendent ensemble (scenario isole de defense collective) ;"
+  print "  3. invariants vrais a chaque tick pour les trois strategies (dont les contrats des groupes) ;"
+  print "  4. non-regression : sans zombie et en strategie individuelle, tester-it1 redonne results/reference_tester_it1.txt."
+  print "Il affiche aussi les indicateurs de comparaison : morts, departs, sorties de groupe, retours infectes, nourriture par sortie."
+end
+
+;; Les simulations du test, dans l'ordre : [ phase strategie taille graine ].
+to-report plan-test-it4
+  let plan []
+  foreach strategies [ s -> foreach n-values nb-graines-test [ i -> i + 1 ] [ g -> set plan lput (list "comparaison" s taille-groupe-test g) plan ] ]
+  foreach [ "individuelle" "groupe fixe" ] [ s -> foreach n-values nb-graines-test [ i -> i + 1 ] [ g -> set plan lput (list "taille 1" s 1 g) plan ] ]
+  report plan
+end
+
+;; Fin commune : non-regression de l'iteration 1 (strategie individuelle), criteres, curseurs remis.
+to terminer-test-it4 [ tous strategie-origine taille-origine ]
+  print "Non-regression de l'iteration 1 (20 simulations sans zombie, strategie individuelle) ..."
+  set strategie "individuelle"
+  let reference comparer-reference-it1       ;; it3_C
+  afficher-criteres-it4 tous reference
+  set strategie strategie-origine
+  set taille-groupe taille-origine
+end
+
+;; Test d'un seul bloc (ligne de commande).
+to tester-it4
+  let strategie-origine strategie
+  let taille-origine taille-groupe
+  annoncer-test-it4
+  let tous []
+  foreach plan-test-it4 [ x ->
+    let r evaluer-it4 (item 3 x) (item 1 x) (item 2 x)
+    afficher-ligne-it4 (item 1 x) (item 2 x) r
+    set tous lput (list item 0 x item 1 x item 2 x r) tous
+  ]
+  terminer-test-it4 tous strategie-origine taille-origine
+end
+
+;; Test pas a pas (bouton "Test it4", "forever") : chaque passage avance d'un jour simule.
+to tester-it4-pas
+  if test4-courant = 0 [ demarrer-test-it4 ]
+  ifelse ticks < duree-simulation [
+    repeat ticks-par-jour [
+      if ticks < duree-simulation [
+        go
+        if not invariants-ok? [ set test4-invariants-ok? false ]
+      ]
+    ]
+  ] [
+    let x test4-courant
+    let r resultat-simulation-it4 (item 3 x) test4-invariants-ok?
+    afficher-ligne-it4 (item 1 x) (item 2 x) r
+    set test4-resultats lput (list item 0 x item 1 x item 2 x r) test4-resultats
+    ifelse not empty? test4-file [
+      commencer-simulation-it4
+    ] [
+      let tous test4-resultats
+      let s0 test4-strategie-origine
+      let t0 test4-taille-origine
+      terminer-test-it4 tous s0 t0
+      set test4-courant 0
+      stop
+    ]
+  ]
+end
+
+to demarrer-test-it4
+  set test4-strategie-origine strategie
+  set test4-taille-origine taille-groupe
+  annoncer-test-it4
+  set test4-resultats []
+  set test4-file plan-test-it4
+  commencer-simulation-it4
+end
+
+;; Prend la simulation suivante de la file ; memes reglages et meme ordre que evaluer-it4.
+to commencer-simulation-it4
+  let x first test4-file
+  let file but-first test4-file
+  let resultats test4-resultats
+  let s0 test4-strategie-origine
+  let t0 test4-taille-origine
+  let anciens-zombies nb-zombies
+  let anciens-obstacles nb-obstacles
+  set strategie item 1 x
+  set taille-groupe item 2 x
+  random-seed item 3 x
+  set nb-zombies 20
+  set nb-obstacles 30
+  setup
+  set nb-zombies anciens-zombies
+  set nb-obstacles anciens-obstacles
+  set test4-file file
+  set test4-courant x
+  set test4-resultats resultats
+  set test4-strategie-origine s0
+  set test4-taille-origine t0
+  set test4-invariants-ok? true
+end
